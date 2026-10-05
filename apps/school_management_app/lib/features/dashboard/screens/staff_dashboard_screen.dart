@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:core_shared/core_shared.dart';
+import 'package:go_router/go_router.dart';
 import '../../attendance/screens/attendance_register_screen.dart';
 import '../../homework/screens/create_homework_screen.dart';
 import '../../broadcast/screens/compose_broadcast_screen.dart';
 import '../../approvals/screens/pending_approvals_screen.dart';
+import '../../admin/screens/staff_access_management_screen.dart';
 
 class StaffDashboardScreen extends ConsumerWidget {
   final void Function(int tabIndex)? onNavigateTab;
@@ -18,12 +21,20 @@ class StaffDashboardScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF1E293B),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
-            tooltip: 'Refresh Stats',
+            icon: const Icon(Icons.shield, color: Color(0xFF10B981)),
+            tooltip: 'Staff Access (RBAC)',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Dashboard stats refreshed!'), backgroundColor: Colors.teal),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffAccessManagementScreen()));
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            tooltip: 'Log Out / Switch Role',
+            onPressed: () async {
+              await ref.read(authServiceProvider).signOut();
+              if (context.mounted) {
+                context.go('/login');
+              }
             },
           ),
         ],
@@ -165,6 +176,15 @@ class StaffDashboardScreen extends ConsumerWidget {
                   accentColor: const Color(0xFF06B6D4),
                   onTap: () {
                     _showExamEntryDialog(context);
+                  },
+                ),
+                _actionCard(
+                  title: 'Staff Access (RBAC)',
+                  subtitle: 'Pre-verify Email & Phone',
+                  icon: Icons.security,
+                  accentColor: const Color(0xFF10B981),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffAccessManagementScreen()));
                   },
                 ),
               ],

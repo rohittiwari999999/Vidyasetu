@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        getUserData().role == 'manager' || 
+        getUserData().staffRole == 'admin' ||
+        request.auth.token.email == 'sarita.abhinav.t9@gmail.com'
+      );
+    }
+
+    function isPrincipal() {
+      return isAuthenticated() && (
+        getUserData().role == 'principal' ||
+        getUserData().staffRole == 'principal' ||
+        isSuperAdmin()
+      );
+    }
+
+    function isStaff() {
+      return isAuthenticated() && (
+        getUserData().role in ['manager', 'principal', 'teacher'] ||
+        getUserData().staffRole in ['admin', 'principal', 'classTeacher', 'generalTeacher']
+      );
+    }
+
+    // -------------------------------------------------------------
+    // STRICT PRE-VERIFIED STAFF ACCESS RULES
+    // -------------------------------------------------------------
+    match /verified_staff/{staffId} {
+      // Any authenticated user can read during login pre-verification check
+      allow read: if isAuthenticated();
+
+      // Only Super Admin / Management can add, modify, or delete staff records
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // -------------------------------------------------------------
+    // USER PROFILES
+    // -------------------------------------------------------------
+    match /users/{userId} {
+      // User can read their own profile, staff can read student/staff profiles
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isStaff());
+
+      // User can only write/update their own profile if pre-verified
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    // -------------------------------------------------------------
+    // ATTENDANCE & ACADEMICS
+    // -------------------------------------------------------------
+    match /attendance/{attId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+
+    match /homework/{hwId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+
+    match /broadcasts/{bcId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrincipal() || isSuperAdmin();
+    }
+  }
+}

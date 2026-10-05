@@ -11,6 +11,20 @@ export const Deliverable1Schema: React.FC = () => {
   };
 
   const schemaJson = `{
+  "verified_staff": {
+    "STAFF_DOC_ID": {
+      "name": "Mrs. Sunita Verma",
+      "email": "sunita.verma@vidyasetu.in",
+      "phone": "+919876543210",
+      "role": "admin | principal | classTeacher | generalTeacher",
+      "assignedClass": "Class 10-A",
+      "schoolId": "DPS-DEL-01",
+      "isActive": true,
+      "addedBy": "Admin (Abhinav Tiwari)",
+      "createdAt": "Timestamp"
+    }
+  },
+
   "schools": {
     "DPS-DEL-01": {
       "schoolId": "DPS-DEL-01",

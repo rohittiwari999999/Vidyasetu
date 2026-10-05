@@ -3,6 +3,97 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum UserRole { manager, principal, teacher, student, parent }
 enum ApprovalStatus { pending, approved, rejected }
 
+enum StaffRole {
+  admin,
+  principal,
+  classTeacher,
+  generalTeacher;
+
+  String get displayName {
+    switch (this) {
+      case StaffRole.admin:
+        return 'Management / Admin';
+      case StaffRole.principal:
+        return 'Principal';
+      case StaffRole.classTeacher:
+        return 'Class Teacher';
+      case StaffRole.generalTeacher:
+        return 'General Teacher';
+    }
+  }
+
+  static StaffRole fromString(String? val) {
+    switch (val?.toLowerCase()) {
+      case 'admin':
+      case 'manager':
+        return StaffRole.admin;
+      case 'principal':
+        return StaffRole.principal;
+      case 'classteacher':
+      case 'class_teacher':
+        return StaffRole.classTeacher;
+      default:
+        return StaffRole.generalTeacher;
+    }
+  }
+}
+
+class VerifiedStaffModel {
+  final String id;
+  final String name;
+  final String email;
+  final String phone;
+  final StaffRole role;
+  final String assignedClass;
+  final String schoolId;
+  final bool isActive;
+  final String addedBy;
+  final DateTime createdAt;
+
+  VerifiedStaffModel({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.role,
+    this.assignedClass = '',
+    required this.schoolId,
+    this.isActive = true,
+    this.addedBy = 'Admin',
+    required this.createdAt,
+  });
+
+  factory VerifiedStaffModel.fromFirestore(DocumentSnapshot doc) {
+    final data = (doc.data() as Map<String, dynamic>?) ?? {};
+    return VerifiedStaffModel(
+      id: doc.id,
+      name: data['name'] ?? '',
+      email: (data['email'] ?? '').toString().toLowerCase().trim(),
+      phone: (data['phone'] ?? '').toString().trim(),
+      role: StaffRole.fromString(data['role']),
+      assignedClass: data['assignedClass'] ?? '',
+      schoolId: data['schoolId'] ?? 'vidyasetu_main',
+      isActive: data['isActive'] ?? true,
+      addedBy: data['addedBy'] ?? 'Admin',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'email': email.toLowerCase().trim(),
+      'phone': phone.trim(),
+      'role': role.name,
+      'assignedClass': assignedClass,
+      'schoolId': schoolId,
+      'isActive': isActive,
+      'addedBy': addedBy,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+}
+
 class UserModel {
   final String id;
   final String name;
@@ -48,10 +139,12 @@ class UserModel {
         orElse: () => UserRole.student,
       ),
       schoolId: data['schoolId'] ?? '',
-      status: ApprovalStatus.values.firstWhere(
-        (e) => e.name == data['status'],
-        orElse: () => ApprovalStatus.pending,
-      ),
+      status: data['isApproved'] == true
+          ? ApprovalStatus.approved
+          : ApprovalStatus.values.firstWhere(
+              (e) => e.name == data['status'],
+              orElse: () => ApprovalStatus.pending,
+            ),
       rejectionReason: data['rejectionReason'],
       studentDetails: data['studentDetails'] != null
           ? StudentDetails.fromMap(data['studentDetails'])
@@ -73,10 +166,68 @@ class UserModel {
       'role': role.name,
       'schoolId': schoolId,
       'status': status.name,
+      'isApproved': isApproved,
       'rejectionReason': rejectionReason,
       'studentDetails': studentDetails?.toMap(),
       'teacherDetails': teacherDetails?.toMap(),
       'deviceTokens': deviceTokens,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+}
+
+class PendingStudentModel {
+  final String uid;
+  final String name;
+  final String email;
+  final String phone;
+  final String grade;
+  final String parentName;
+  final String parentPhone;
+  final bool isApproved;
+  final String status;
+  final DateTime createdAt;
+
+  PendingStudentModel({
+    required this.uid,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.grade,
+    required this.parentName,
+    required this.parentPhone,
+    this.isApproved = false,
+    this.status = 'pending',
+    required this.createdAt,
+  });
+
+  factory PendingStudentModel.fromFirestore(DocumentSnapshot doc) {
+    final data = (doc.data() as Map<String, dynamic>?) ?? {};
+    return PendingStudentModel(
+      uid: doc.id,
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      phone: data['phone'] ?? '',
+      grade: data['grade'] ?? 'Class 10-A',
+      parentName: data['parentName'] ?? '',
+      parentPhone: data['parentPhone'] ?? '',
+      isApproved: data['isApproved'] ?? false,
+      status: data['status'] ?? 'pending',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'grade': grade,
+      'parentName': parentName,
+      'parentPhone': parentPhone,
+      'isApproved': isApproved,
+      'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
