@@ -139,12 +139,10 @@ class UserModel {
         orElse: () => UserRole.student,
       ),
       schoolId: data['schoolId'] ?? '',
-      status: data['isApproved'] == true
-          ? ApprovalStatus.approved
-          : ApprovalStatus.values.firstWhere(
-              (e) => e.name == data['status'],
-              orElse: () => ApprovalStatus.pending,
-            ),
+      status: ApprovalStatus.values.firstWhere(
+        (e) => e.name == data['status'],
+        orElse: () => ApprovalStatus.pending,
+      ),
       rejectionReason: data['rejectionReason'],
       studentDetails: data['studentDetails'] != null
           ? StudentDetails.fromMap(data['studentDetails'])
@@ -166,68 +164,10 @@ class UserModel {
       'role': role.name,
       'schoolId': schoolId,
       'status': status.name,
-      'isApproved': isApproved,
       'rejectionReason': rejectionReason,
       'studentDetails': studentDetails?.toMap(),
       'teacherDetails': teacherDetails?.toMap(),
       'deviceTokens': deviceTokens,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
-  }
-}
-
-class PendingStudentModel {
-  final String uid;
-  final String name;
-  final String email;
-  final String phone;
-  final String grade;
-  final String parentName;
-  final String parentPhone;
-  final bool isApproved;
-  final String status;
-  final DateTime createdAt;
-
-  PendingStudentModel({
-    required this.uid,
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.grade,
-    required this.parentName,
-    required this.parentPhone,
-    this.isApproved = false,
-    this.status = 'pending',
-    required this.createdAt,
-  });
-
-  factory PendingStudentModel.fromFirestore(DocumentSnapshot doc) {
-    final data = (doc.data() as Map<String, dynamic>?) ?? {};
-    return PendingStudentModel(
-      uid: doc.id,
-      name: data['name'] ?? '',
-      email: data['email'] ?? '',
-      phone: data['phone'] ?? '',
-      grade: data['grade'] ?? 'Class 10-A',
-      parentName: data['parentName'] ?? '',
-      parentPhone: data['parentPhone'] ?? '',
-      isApproved: data['isApproved'] ?? false,
-      status: data['status'] ?? 'pending',
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'grade': grade,
-      'parentName': parentName,
-      'parentPhone': parentPhone,
-      'isApproved': isApproved,
-      'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
