@@ -270,7 +270,116 @@ class AuthService {
   }
 
   // -------------------------------------------------------------
-  // 6. GENERAL AUTH
+  // 6. STUDENT / PARENT AUTH & PENDING APPROVAL WORKFLOW
+  // -------------------------------------------------------------
+  Future<UserCredential> signInStudentWithGoogle({
+    String grade = 'Class 10-A',
+    String parentPhone = '',
+  }) async {
+    final userCred = await signInWithGoogle();
+    final user = userCred.user!;
+    await registerOrEnsurePendingStudent(
+      user: user,
+      grade: grade,
+      parentPhone: parentPhone,
+    );
+    return userCred;
+  }
+
+  Future<void> registerOrEnsurePendingStudent({
+    required User user,
+    String grade = 'Class 10-A',
+    String studentName = '',
+    String parentPhone = '',
+  }) async {
+    final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+    // If user already exists and is approved, do not overwrite approval
+    if (userDoc.exists) {
+      final data = userDoc.data() ?? {};
+      if (data['isApproved'] == true || data['status'] == 'approved') {
+        return;
+      }
+    }
+
+    final name = studentName.isNotEmpty
+        ? studentName
+        : (user.displayName != null && user.displayName!.isNotEmpty
+            ? user.displayName!
+            : 'Student');
+    final phone = parentPhone.isNotEmpty
+        ? parentPhone
+        : (user.phoneNumber ?? '');
+    final email = user.email ?? '';
+
+    final studentData = {
+      'id': user.uid,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': 'student',
+      'schoolId': 'vidyasetu_main',
+      'isApproved': false,
+      'status': 'pending',
+      'studentDetails': {
+        'studentId': user.uid,
+        'admissionNumber': 'PENDING_APPROVAL',
+        'rollNumber': 'PENDING',
+        'grade': grade,
+        'parentName': name,
+        'parentPhone': phone,
+      },
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    // 1. Write to users collection
+    await _firestore.collection('users').doc(user.uid).set(studentData, SetOptions(merge: true));
+
+    // 2. Write to pending_students collection for Class Teacher approval queue
+    await _firestore.collection('pending_students').doc(user.uid).set(studentData, SetOptions(merge: true));
+  }
+
+  Stream<DocumentSnapshot> studentApprovalStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots();
+  }
+
+  Future<void> approveStudentByTeacher({
+    required String studentId,
+    required String rollNumber,
+    required String admissionNumber,
+    required String grade,
+  }) async {
+    final updateData = {
+      'status': 'approved',
+      'isApproved': true,
+      'studentDetails.rollNumber': rollNumber,
+      'studentDetails.admissionNumber': admissionNumber,
+      'approvedAt': FieldValue.serverTimestamp(),
+    };
+
+    // 1. Update in users collection
+    await _firestore.collection('users').doc(studentId).update(updateData);
+
+    // 2. Write to verified_students collection
+    await _firestore.collection('verified_students').doc(studentId).set({
+      'studentId': studentId,
+      'rollNumber': rollNumber,
+      'admissionNumber': admissionNumber,
+      'grade': grade,
+      'isApproved': true,
+      'approvedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // 3. Mark approved in pending_students collection
+    await _firestore.collection('pending_students').doc(studentId).update({
+      'status': 'approved',
+      'isApproved': true,
+    });
+  }
+
+  // -------------------------------------------------------------
+  // 7. GENERAL AUTH & SIGN OUT
   // -------------------------------------------------------------
   Future<void> signOut() async {
     await _googleSignIn.signOut();

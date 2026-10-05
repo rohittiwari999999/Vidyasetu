@@ -139,10 +139,9 @@ class UserModel {
         orElse: () => UserRole.student,
       ),
       schoolId: data['schoolId'] ?? '',
-      status: ApprovalStatus.values.firstWhere(
-        (e) => e.name == data['status'],
-        orElse: () => ApprovalStatus.pending,
-      ),
+      status: (data['isApproved'] == true || data['status'] == 'approved')
+          ? ApprovalStatus.approved
+          : ApprovalStatus.pending,
       rejectionReason: data['rejectionReason'],
       studentDetails: data['studentDetails'] != null
           ? StudentDetails.fromMap(data['studentDetails'])
@@ -164,6 +163,7 @@ class UserModel {
       'role': role.name,
       'schoolId': schoolId,
       'status': status.name,
+      'isApproved': isApproved,
       'rejectionReason': rejectionReason,
       'studentDetails': studentDetails?.toMap(),
       'teacherDetails': teacherDetails?.toMap(),

@@ -73,5 +73,18 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isPrincipal() || isSuperAdmin();
     }
+
+    // -------------------------------------------------------------
+    // PENDING & VERIFIED STUDENTS (Approval Workflow)
+    // -------------------------------------------------------------
+    match /pending_students/{studentId} {
+      allow read, create: if isAuthenticated() && (request.auth.uid == studentId || isStaff());
+      allow update, delete: if isStaff();
+    }
+
+    match /verified_students/{studentId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
   }
 }

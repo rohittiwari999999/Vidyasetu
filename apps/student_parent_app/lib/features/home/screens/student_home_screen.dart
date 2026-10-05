@@ -26,6 +26,13 @@ class StudentHomeScreen extends ConsumerWidget {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentNoticesScreen()));
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white70),
+            tooltip: 'Log Out',
+            onPressed: () async {
+              await ref.read(authServiceProvider).signOut();
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
