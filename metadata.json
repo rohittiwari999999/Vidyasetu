@@ -1,0 +1,6 @@
+{
+  "name": "VidyaSetu - Indian School Management & Parent Ecosystem",
+  "description": "Cross-platform School Management System for Indian Schools (PG to 12th). Dual-app architecture for Staff & Parents with Firebase Firestore, Pending Approvals, Attendance, Homework, Fee Management, and Broadcasts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

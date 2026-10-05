@@ -1,0 +1,41 @@
+================================================================================
+GOOGLE PLAY CONSOLE STORE LISTING: APP 1 (MANAGEMENT APP)
+================================================================================
+App Name (30 characters max):
+VidyaSetu School Management
+
+Short Description (80 characters max):
+School ERP & Attendance app for Indian Principals, Managers & Teachers.
+
+Full Description (4000 characters max):
+VidyaSetu Staff is a comprehensive, cloud-native School Management Application built specifically for Indian Schools (Playgroup, Nursery, Kindergarten, Primary, Secondary, and Senior Secondary Classes 1 to 12). 
+
+Fully aligned with CBSE, ICSE, and State Board administrative norms.
+
+KEY HIGHLIGHTS FOR PRINCIPALS, MANAGERS & TEACHERS:
+
+1. PENDING ADMISSION APPROVAL WORKFLOW
+When students or parents register online via the mobile app, their records enter a secure "Pending Approvals" verification queue. Principals and Class Teachers can review details, verify Transfer Certificates (TC), and assign official Roll Numbers and SRN (Student Registration Number) with a single tap.
+
+2. DIGITAL ATTENDANCE REGISTER
+Take daily roll call in under 30 seconds for your assigned class. The app automatically dispatches instant SMS alerts and FCM notifications to parents of absent or late students. Real-time class percentages are synchronized to help monitor CBSE's mandatory 75% attendance rule.
+
+3. HOMEWORK & WORKSHEET ASSIGNMENT MODULE
+Create and publish homework with attachments, deadlines, and maximum marks. Subject teachers can inspect student PDF submissions, grade marks, and deliver personalized feedback directly to students.
+
+4. URGENT BROADCAST NOTICES & CIRCULARS
+Broadcast urgent notices for rain emergencies, winter vacations, examination schedules, or Parent-Teacher Meetings (PTM) straight to parent lockscreens using Firebase Cloud Messaging.
+
+5. INTEGRATED VIRTUAL CLASSROOM (JITSI / WEBRTC)
+Host encrypted live video classes with screen sharing, participant list, and hand-raise features. Zero external downloads needed for students.
+
+6. FEE COLLECTION MONITORING
+Track real-time fee dues, fee heads (tuition, transport, laboratory, exam fees), and collection velocity in Indian Rupees (₹).
+
+TECHNICAL SPECIFICATIONS:
+- Category: Education / School Management
+- Target Audience: Teachers, Principals, Administrators
+- Target SDK: 34 (Android 14)
+- Min SDK: 23 (Android 6.0+)
+- Content Rating: Everyone
+================================================================================

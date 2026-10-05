@@ -1,0 +1,30 @@
+{
+  "packageName": "in.vidyasetu.student",
+  "appName": "VidyaSetu Student & Parent",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "minSdkVersion": 23,
+  "targetSdkVersion": 34,
+  "compileSdkVersion": 34,
+  "buildType": "release",
+  "signingConfig": {
+    "keyAlias": "vidyasetu_release",
+    "signatureScheme": ["v1", "v2", "v3"],
+    "googlePlayAppSigning": true
+  },
+  "artifacts": {
+    "aab": "apps/student_parent_app/build/app/outputs/bundle/release/app-release.aab",
+    "apk": "apps/student_parent_app/build/app/outputs/flutter-apk/app-release.apk"
+  },
+  "supportedArchitectures": ["armeabi-v7a", "arm64-v8a", "x86_64"],
+  "permissionsDeclared": [
+    "android.permission.INTERNET",
+    "android.permission.CAMERA",
+    "android.permission.RECORD_AUDIO",
+    "android.permission.MODIFY_AUDIO_SETTINGS",
+    "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.POST_NOTIFICATIONS",
+    "android.permission.READ_MEDIA_IMAGES"
+  ],
+  "contentRating": "Everyone (Families & K-12 students compliant with Google Play Families Policy & India DPDP Act 2023)"
+}

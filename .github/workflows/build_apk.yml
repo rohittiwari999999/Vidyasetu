@@ -1,0 +1,71 @@
+name: Build Official Android APK & AAB
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compile 30MB Official Flutter Android Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+          cache: true
+
+      - name: Build Core Package
+        run: |
+          cd packages/core_shared
+          flutter pub get
+
+      - name: Build App 1 (School Management App)
+        run: |
+          cd apps/school_management_app
+          flutter pub get
+          flutter build apk --release
+          flutter build appbundle --release
+
+      - name: Build App 2 (Student & Parent App)
+        run: |
+          cd apps/student_parent_app
+          flutter pub get
+          flutter build apk --release
+          flutter build appbundle --release
+
+      - name: Upload Staff Management APK (30 MB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VidyaSetu-Staff-Management-Release-APK
+          path: apps/school_management_app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Staff Management AAB (Play Store)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VidyaSetu-Staff-Management-Release-AAB
+          path: apps/school_management_app/build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload Student Parent APK (30 MB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VidyaSetu-Student-Parent-Release-APK
+          path: apps/student_parent_app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Student Parent AAB (Play Store)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VidyaSetu-Student-Parent-Release-AAB
+          path: apps/student_parent_app/build/app/outputs/bundle/release/app-release.aab

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
+  <defs>
+    <linearGradient id="stuFeatBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#022C22" />
+      <stop offset="50%" stop-color="#064E3B" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <linearGradient id="stuGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+    <linearGradient id="stuCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(6, 78, 59, 0.9)" />
+      <stop offset="100%" stop-color="rgba(2, 44, 34, 0.95)" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#stuFeatBg)" />
+
+  <g transform="translate(60, 90)">
+    <rect width="210" height="34" rx="17" fill="rgba(52, 211, 153, 0.2)" stroke="rgba(52, 211, 153, 0.5)" stroke-width="1.5" />
+    <text x="105" y="22" font-family="Arial, sans-serif" font-weight="bold" font-size="12" fill="#6EE7B7" text-anchor="middle" letter-spacing="1.5">FOR STUDENTS &amp; PARENTS</text>
+
+    <text x="0" y="85" font-family="Arial, sans-serif" font-weight="900" font-size="44" fill="#FFFFFF" letter-spacing="-1">VidyaSetu</text>
+    <text x="210" y="85" font-family="Arial, sans-serif" font-weight="900" font-size="44" fill="url(#stuGold)" letter-spacing="-1">Student</text>
+
+    <text x="0" y="125" font-family="Arial, sans-serif" font-weight="700" font-size="20" fill="#E2E8F0">Smart Companion for School &amp; Board Exams</text>
+
+    <text x="0" y="170" font-family="Arial, sans-serif" font-size="15" fill="#A7F3D0">
+      <tspan x="0" dy="0">✓ Digital Homework, NCERT Worksheets &amp; Solution Upload</tspan>
+      <tspan x="0" dy="28">✓ 1-Tap Join Live Classroom with Subject Teachers</tspan>
+      <tspan x="0" dy="28">✓ Monthly Attendance Calendar (CBSE 75% Tracker)</tspan>
+      <tspan x="0" dy="28">✓ Instant UPI School Fee Payments &amp; Official Receipts</tspan>
+      <tspan x="0" dy="28">✓ Digital Marksheet &amp; Term Report Cards</tspan>
+    </text>
+  </g>
+
+  <!-- Right Visual: Digital ID Card & Receipt -->
+  <g transform="translate(580, 70)">
+    <rect width="380" height="200" rx="24" fill="url(#stuCard)" stroke="#059669" stroke-width="2" />
+    <circle cx="60" cy="65" r="32" fill="#10B981" />
+    <text x="60" y="73" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="#FFFFFF" text-anchor="middle">AS</text>
+    <text x="110" y="55" font-family="Arial, sans-serif" font-weight="bold" font-size="18" fill="#FFFFFF">Aarav Sharma</text>
+    <text x="110" y="75" font-family="Arial, sans-serif" font-size="12" fill="#A7F3D0">Class 10-A • Roll No. #12</text>
+    <text x="110" y="93" font-family="Arial, sans-serif" font-size="11" fill="#6EE7B7">SRN: DMA-2022/1042 • Shivaji House</text>
+
+    <line x1="20" y1="120" x2="360" y2="120" stroke="#047857" />
+
+    <text x="30" y="150" font-family="Arial, sans-serif" font-size="12" fill="#D1FAE5">Term 1 CBSE Assessment</text>
+    <text x="30" y="180" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#FDE68A">94.0% (A1)</text>
+
+    <text x="220" y="150" font-family="Arial, sans-serif" font-size="12" fill="#D1FAE5">Attendance Rate</text>
+    <text x="220" y="180" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#34D399">96.4%</text>
+  </g>
+
+  <!-- Instant Fee Payment Badge -->
+  <g transform="translate(620, 300)">
+    <rect width="340" height="120" rx="20" fill="url(#stuCard)" stroke="#10B981" stroke-width="2" />
+    <text x="25" y="40" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF">Instant School Fee Receipt</text>
+    <text x="25" y="65" font-family="Arial, sans-serif" font-size="12" fill="#A7F3D0">Quarter 2 Fees Paid: ₹20,200 (UPI)</text>
+    <text x="25" y="95" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#FDE68A">Receipt #DMA/REC/2026/0894 Generated ✓</text>
+  </g>
+</svg>

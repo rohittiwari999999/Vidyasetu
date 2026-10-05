@@ -1,0 +1,40 @@
+================================================================================
+GOOGLE PLAY CONSOLE & APPLE APP STORE REVIEW TEAM CREDENTIALS
+================================================================================
+
+Provide these accounts in Google Play Console > Policy and programs > App content > App access.
+
+ACCOUNT 1 (For Testing Management App: in.vidyasetu.management):
+- Role: School Principal (Full administrative privileges)
+- Email: principal@vidyasetu.edu.in
+- Password: DemoPassword123!
+- Features to test:
+  * Executive dashboard with student count and fee analytics
+  * Pending student admission verification queue
+  * Class Teacher daily attendance register
+  * Homework publisher with attachment
+  * Broadcast emergency notice dispatch (FCM)
+  * Live video class hosting (Jitsi)
+
+ACCOUNT 2 (For Testing Class Teacher View):
+- Role: Class Teacher (Class 10-A)
+- Email: meenakshi.sharma@vidyasetu.edu.in
+- Password: DemoPassword123!
+
+ACCOUNT 3 (For Testing Student & Parent App: in.vidyasetu.student):
+- Role: Approved Student (Class 10-A)
+- Email: aarav.sharma@student.vidyasetu.in
+- Password: DemoPassword123!
+- Features to test:
+  * Homework submission with solution PDF
+  * Monthly attendance calendar with CBSE 75% indicator
+  * Online fee payment simulation & official CBSE receipt generation
+  * Digital report card and marksheets
+  * 1-click live classroom entry
+
+ACCOUNT 4 (To Test Pending Approval Gate):
+- Role: Student awaiting approval from School Admin
+- Email: devansh.kumar.reg@gmail.com
+- Password: DemoPassword123!
+- Demonstrates how new registrations are gated until authorized by school staff.
+================================================================================

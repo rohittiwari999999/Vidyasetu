@@ -1,0 +1,42 @@
+================================================================================
+GOOGLE PLAY CONSOLE STORE LISTING: APP 2 (STUDENT & PARENT APP)
+================================================================================
+App Name (30 characters max):
+VidyaSetu Student & Parent
+
+Short Description (80 characters max):
+Homework, live classes, attendance, fee receipts & report card for students.
+
+Full Description (4000 characters max):
+VidyaSetu Student & Parent app connects Indian school students and parents directly to their school (from Playgroup, Nursery, KG to 10th Board and 12th Senior Secondary).
+
+FEATURES FOR STUDENTS & PARENTS:
+
+1. HOMEWORK & ASSIGNMENTS
+View daily homework assignments assigned by your class teacher. Download question worksheets and upload handwritten solutions in high-resolution PDF format. Receive grades and personalized teacher remarks directly on your phone.
+
+2. LIVE ONLINE CLASSES
+Join live lectures directly with a single tap. Crystal-clear video and audio powered by integrated WebRTC/Jitsi conferencing with raising hand and teacher whiteboard capabilities.
+
+3. MONTHLY ATTENDANCE CALENDAR
+Monitor your attendance daily with an interactive monthly calendar. Color-coded green (Present), red (Absent), yellow (Late), and blue (Holidays) indicators help you maintain the CBSE mandatory 75% attendance threshold for board examinations.
+
+4. REAL-TIME NOTICE BOARD & EMERGENCY CIRCULARS
+Get instant notifications for weather-related holidays, Deepawali breaks, exam routines, and PTM schedules.
+
+5. INSTANT FEE PAYMENTS & OFFICIAL CBSE RECEIPTS
+Pay school term fees securely via UPI (Google Pay, PhonePe, Paytm, BHIM) or NetBanking. Instantly download official CBSE-affiliated fee acknowledgement receipts with transaction IDs.
+
+6. DIGITAL REPORT CARDS & MARKSHEETS
+View Term 1, Mid-Term, and Final report cards with CBSE grading (A1, A2, B1, B2...) and subject breakdown.
+
+7. CLASS TIMETABLE
+Check your daily 8-period routine with period timings, subject teachers, and classroom allocations.
+
+TECHNICAL SPECIFICATIONS:
+- Category: Education
+- Target Audience: Students, Parents & Families
+- Target SDK: 34 (Android 14)
+- Min SDK: 23 (Android 6.0+)
+- Content Rating: Everyone (Families Policy Compliant)
+================================================================================
