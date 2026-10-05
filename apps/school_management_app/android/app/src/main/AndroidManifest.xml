@@ -10,6 +10,10 @@
         android:label="VidyaSetu Staff"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Flutter V2 Embedding -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
