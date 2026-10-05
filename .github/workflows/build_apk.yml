@@ -32,6 +32,76 @@ jobs:
           cd packages/core_shared
           flutter pub get
 
+      - name: Ensure Google Services Configuration
+        run: |
+          mkdir -p apps/school_management_app/android/app/src/release
+          cat << 'EOF' > apps/school_management_app/android/app/google-services.json
+          {
+            "project_info": {
+              "project_number": "715255586358",
+              "project_id": "vidyasetu-school-management",
+              "storage_bucket": "vidyasetu-school-management.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:715255586358:android:a1b2c3d4e5f60718293a4b",
+                  "android_client_info": {
+                    "package_name": "in.vidyasetu.management"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyDummyKeyForBuildCompilationOnly12345"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          cp apps/school_management_app/android/app/google-services.json apps/school_management_app/android/app/src/release/google-services.json
+
+          mkdir -p apps/student_parent_app/android/app/src/release
+          cat << 'EOF' > apps/student_parent_app/android/app/google-services.json
+          {
+            "project_info": {
+              "project_number": "715255586358",
+              "project_id": "vidyasetu-school-management",
+              "storage_bucket": "vidyasetu-school-management.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:715255586358:android:b2c3d4e5f60718293a4b5c",
+                  "android_client_info": {
+                    "package_name": "in.vidyasetu.student"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyDummyKeyForBuildCompilationOnly12345"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          cp apps/student_parent_app/android/app/google-services.json apps/student_parent_app/android/app/src/release/google-services.json
+
       - name: Build App 1 (School Management App)
         run: |
           cd apps/school_management_app
