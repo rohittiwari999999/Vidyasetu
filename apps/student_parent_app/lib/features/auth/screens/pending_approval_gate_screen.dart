@@ -87,7 +87,7 @@ class PendingApprovalGateScreen extends ConsumerWidget {
 
   Widget _infoRow(String label, String value, Color color) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.between,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
         Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),

@@ -48,7 +48,7 @@ class _MyHomeworkScreenState extends State<MyHomeworkScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.between,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Chip(label: Text(subject, style: const TextStyle(color: Colors.white, fontSize: 11)), backgroundColor: Colors.indigo),
                 Text(marks, style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
