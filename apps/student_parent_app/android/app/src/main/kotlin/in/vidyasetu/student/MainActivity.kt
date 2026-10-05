@@ -1,4 +1,4 @@
-package in.vidyasetu.student
+package `in`.vidyasetu.student
 
 import io.flutter.embedding.android.FlutterActivity
 
