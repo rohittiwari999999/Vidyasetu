@@ -64,9 +64,9 @@ class StudentHomeScreen extends ConsumerWidget {
               mainAxisSpacing: 12,
               children: [
                 _navCard(context, Icons.book, 'Homework', '3 Assignments', '/homework', Colors.blue),
-                _navCard(context, Icons.calendar_today, 'Attendance', '96.4% Present', '/attendance', Colors.emerald),
+                _navCard(context, Icons.calendar_today, 'Attendance', '96.4% Present', '/attendance', Colors.green),
                 _navCard(context, Icons.currency_rupee, 'Fees & Receipts', 'Q2 Paid / Q3 Due', '/fees', Colors.purple),
-                _navCard(context, Icons.video_call, 'Live Class', 'Join Jitsi Room', '/home', Colors.rose),
+                _navCard(context, Icons.video_call, 'Live Class', 'Join Jitsi Room', '/home', Colors.pink),
               ],
             ),
           ],
