@@ -102,6 +102,41 @@ jobs:
           EOF
           cp apps/student_parent_app/android/app/google-services.json apps/student_parent_app/android/app/src/release/google-services.json
 
+      - name: Ensure Android Launcher Icons
+        run: |
+          python3 -c "
+          import struct, zlib, os
+
+          def make_png(width, height, r, g, b):
+              png = b'\x89PNG\r\n\x1a\n'
+              ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+              ihdr = struct.pack('>I', len(ihdr_data)) + b'IHDR' + ihdr_data + struct.pack('>I', zlib.crc32(b'IHDR' + ihdr_data))
+              raw = (b'\x00' + bytes([r, g, b]) * width) * height
+              compressed = zlib.compress(raw)
+              idat = struct.pack('>I', len(compressed)) + b'IDAT' + compressed + struct.pack('>I', zlib.crc32(b'IDAT' + compressed))
+              iend = struct.pack('>I', 0) + b'IEND' + struct.pack('>I', zlib.crc32(b'IEND'))
+              return png + ihdr + idat + iend
+
+          def create_all(app_path, r, g, b):
+              res_path = os.path.join(app_path, 'android/app/src/main/res')
+              sizes = {
+                  'mipmap-mdpi': 48,
+                  'mipmap-hdpi': 72,
+                  'mipmap-xhdpi': 96,
+                  'mipmap-xxhdpi': 144,
+                  'mipmap-xxxhdpi': 192,
+              }
+              for folder, size in sizes.items():
+                  dir_p = os.path.join(res_path, folder)
+                  os.makedirs(dir_p, exist_ok=True)
+                  data = make_png(size, size, r, g, b)
+                  with open(os.path.join(dir_p, 'ic_launcher.png'), 'wb') as f:
+                      f.write(data)
+
+          create_all('apps/school_management_app', 99, 102, 241)
+          create_all('apps/student_parent_app', 16, 185, 129)
+          "
+
       - name: Build App 1 (School Management App)
         run: |
           cd apps/school_management_app
