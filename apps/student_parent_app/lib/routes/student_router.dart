@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_shared/core_shared.dart';
-import '../features/home/screens/student_home_screen.dart';
+import '../features/home/screens/student_main_scaffold.dart';
 import '../features/auth/screens/pending_approval_gate_screen.dart';
 import '../features/homework/screens/my_homework_screen.dart';
 import '../features/attendance/screens/attendance_calendar_screen.dart';
 import '../features/fees/screens/fee_ledger_screen.dart';
+import '../features/live_class/screens/live_class_screen.dart';
+import '../features/notices/screens/notices_screen.dart';
 
 final studentRouterProvider = Provider<GoRouter>((ref) {
   final userProfileAsync = ref.watch(currentUserProfileProvider);
@@ -23,7 +25,7 @@ final studentRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/home',
-        builder: (context, state) => const StudentHomeScreen(),
+        builder: (context, state) => const StudentMainScaffold(),
       ),
       GoRoute(
         path: '/pending-approval',
@@ -40,6 +42,14 @@ final studentRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/fees',
         builder: (context, state) => const FeeLedgerScreen(),
+      ),
+      GoRoute(
+        path: '/live-class',
+        builder: (context, state) => const LiveClassScreen(),
+      ),
+      GoRoute(
+        path: '/notices',
+        builder: (context, state) => const StudentNoticesScreen(),
       ),
     ],
   );
