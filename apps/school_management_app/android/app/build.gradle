@@ -38,9 +38,19 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs {
+        release {
+            storeFile file("upload-keystore.p12")
+            storePassword "android"
+            keyAlias "vidyasetu"
+            keyPassword "android"
+            storeType "PKCS12"
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }

@@ -155,6 +155,13 @@ jobs:
           create_all('apps/student_parent_app', 16, 185, 129)
           "
 
+      - name: Ensure Keystore Setup
+        run: |
+          mkdir -p apps/school_management_app/android/app
+          mkdir -p apps/student_parent_app/android/app
+          cp android_keys/upload-keystore.p12 apps/school_management_app/android/app/upload-keystore.p12
+          cp android_keys/upload-keystore.p12 apps/student_parent_app/android/app/upload-keystore.p12
+
       - name: Build App 1 (School Management App)
         run: |
           cd apps/school_management_app
