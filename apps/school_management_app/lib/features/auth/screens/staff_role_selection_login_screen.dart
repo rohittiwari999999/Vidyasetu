@@ -73,24 +73,53 @@ class _StaffRoleSelectionLoginScreenState
   }
 
   void _showAccessDeniedDialog(BuildContext context, String message) {
+    final bool isGoogleApi10 = message.contains('ApiException: 10') ||
+        (message.contains('PlatformException') && message.contains('sign_in_failed'));
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
-          children: const [
-            Icon(Icons.shield_outlined, color: Colors.redAccent, size: 28),
-            SizedBox(width: 10),
-            Text(
-              'Access Denied',
-              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+          children: [
+            Icon(
+              isGoogleApi10 ? Icons.settings_suggest_rounded : Icons.shield_outlined,
+              color: isGoogleApi10 ? Colors.amber : Colors.redAccent,
+              size: 28,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isGoogleApi10 ? 'Google Sign-In SHA-1 Setup Needed' : 'Access Denied',
+                style: TextStyle(
+                  color: isGoogleApi10 ? Colors.amber : Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ],
         ),
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isGoogleApi10) ...[
+              const Text(
+                'Aapke phone me Google Sign-In isliye fail hua kyonki Firebase Console me is APK ka SHA-1 fingerprint add nahi hai (ApiException 10: DEVELOPER_ERROR).\n\n'
+                'Isko theek karne ke do tareeqe hain:\n'
+                '1. Turant login karne ke liye "Continue with Mobile Number (OTP)" use karein.\n'
+                '2. Ya Firebase Console me jaakar apne project me SHA-1 add karke naya google-services.json download karein.',
+                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.45),
+              ),
+            ] else ...[
+              Text(
+                message,
+                style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+              ),
+            ],
+          ],
         ),
         actions: [
           ElevatedButton(

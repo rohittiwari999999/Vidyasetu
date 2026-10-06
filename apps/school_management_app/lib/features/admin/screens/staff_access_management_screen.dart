@@ -168,6 +168,71 @@ class _StaffAccessManagementScreenState
     );
   }
 
+  void _editStaffDialog(BuildContext context, VerifiedStaffModel staff) {
+    final phoneController = TextEditingController(text: staff.phone);
+    final emailController = TextEditingController(text: staff.email);
+    final nameController = TextEditingController(text: staff.name);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.edit, color: Color(0xFF10B981), size: 22),
+            SizedBox(width: 8),
+            Text('Change Mobile Number', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDeco('Staff Name', 'Name', Icons.person),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDeco('Mobile Number (For OTP)', 'e.g. 9876543210', Icons.phone),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: emailController,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDeco('Email ID (For Google Login)', 'email', Icons.email),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await ref.read(authServiceProvider).updateVerifiedStaff(
+                staff.id,
+                name: nameController.text.trim(),
+                phone: phoneController.text.trim(),
+                email: emailController.text.trim(),
+              );
+              if (context.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Mobile number updated!'), backgroundColor: Color(0xFF10B981)),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmDelete(BuildContext context, VerifiedStaffModel staff) {
     showDialog(
       context: context,
@@ -206,7 +271,7 @@ class _StaffAccessManagementScreenState
       id: '',
       name: 'Abhinav Tiwari (Super Admin)',
       email: 'sarita.abhinav.t9@gmail.com',
-      phone: '9876543210',
+      phone: '+919670708847',
       role: StaffRole.admin,
       schoolId: _schoolId,
       createdAt: DateTime.now(),
@@ -455,6 +520,11 @@ class _StaffAccessManagementScreenState
                       ],
                     ),
                   ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF10B981), size: 20),
+                  tooltip: 'Change Mobile Number',
+                  onPressed: () => _editStaffDialog(context, staff),
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                   tooltip: 'Revoke Access',

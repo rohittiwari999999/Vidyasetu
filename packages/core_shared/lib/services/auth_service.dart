@@ -49,6 +49,30 @@ class AuthService {
     // 1. Check by email if provided
     if (email != null && email.trim().isNotEmpty) {
       final normalizedEmail = email.trim().toLowerCase();
+
+      // Master Super Admin auto-bootstrap into database if new project
+      if (normalizedEmail == 'sarita.abhinav.t9@gmail.com') {
+        final query = await _firestore
+            .collection('verified_staff')
+            .where('email', isEqualTo: normalizedEmail)
+            .limit(1)
+            .get();
+
+        if (query.isEmpty) {
+          final rootDoc = _firestore.collection('verified_staff').doc('root_admin_owner');
+          await rootDoc.set({
+            'name': 'Abhinav Tiwari (Super Admin)',
+            'email': normalizedEmail,
+            'phone': '+919670708847',
+            'role': 'admin',
+            'schoolId': 'vidyasetu_main',
+            'isActive': true,
+            'addedBy': 'Master Security Root',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
       final query = await _firestore
           .collection('verified_staff')
           .where('email', isEqualTo: normalizedEmail)
@@ -64,30 +88,36 @@ class AuthService {
     // 2. Check by phone number if provided (handles with/without +91)
     if (phone != null && phone.trim().isNotEmpty) {
       final cleanPhone = phone.trim().replaceAll(RegExp(r'[\s-]'), '');
-      
-      // Try exact phone
-      var query = await _firestore
-          .collection('verified_staff')
-          .where('phone', isEqualTo: cleanPhone)
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
+      final pBare = cleanPhone.startsWith('+91') ? cleanPhone.substring(3) : cleanPhone;
+      final pFull = cleanPhone.startsWith('+91') ? cleanPhone : '+91$cleanPhone';
 
-      if (query.docs.isNotEmpty) {
-        return VerifiedStaffModel.fromFirestore(query.docs.first);
+      // Master Super Admin Mobile Number (9670708847) auto-bootstrap into database
+      if (pBare == '9670708847') {
+        final query = await _firestore
+            .collection('verified_staff')
+            .where('phone', whereIn: [pBare, pFull])
+            .limit(1)
+            .get();
+
+        if (query.isEmpty) {
+          final rootDoc = _firestore.collection('verified_staff').doc('root_admin_owner');
+          await rootDoc.set({
+            'name': 'Abhinav Tiwari (Super Admin)',
+            'email': 'sarita.abhinav.t9@gmail.com',
+            'phone': '+919670708847',
+            'role': 'admin',
+            'schoolId': 'vidyasetu_main',
+            'isActive': true,
+            'addedBy': 'Master Security Root',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
       }
-
-      // Try with/without country code +91
-      final phoneWithoutCountry = cleanPhone.startsWith('+91')
-          ? cleanPhone.substring(3)
-          : cleanPhone;
-      final phoneWithCountry = cleanPhone.startsWith('+91')
-          ? cleanPhone
-          : '+91$cleanPhone';
-
-      query = await _firestore
+      
+      // Query exact phone or with/without country code
+      final query = await _firestore
           .collection('verified_staff')
-          .where('phone', whereIn: [phoneWithoutCountry, phoneWithCountry])
+          .where('phone', whereIn: [pBare, pFull])
           .where('isActive', isEqualTo: true)
           .limit(1)
           .get();
@@ -256,6 +286,26 @@ class AuthService {
       'addedBy': staff.addedBy,
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> updateVerifiedStaff(
+    String docId, {
+    String? name,
+    String? email,
+    String? phone,
+    StaffRole? role,
+    String? assignedClass,
+  }) async {
+    final Map<String, dynamic> data = {
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (name != null) data['name'] = name.trim();
+    if (email != null) data['email'] = email.toLowerCase().trim();
+    if (phone != null) data['phone'] = phone.trim();
+    if (role != null) data['role'] = role.name;
+    if (assignedClass != null) data['assignedClass'] = assignedClass.trim();
+
+    await _firestore.collection('verified_staff').doc(docId).update(data);
   }
 
   Future<void> toggleStaffStatus(String docId, bool currentStatus) async {
