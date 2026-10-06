@@ -58,7 +58,7 @@ class AuthService {
             .limit(1)
             .get();
 
-        if (query.isEmpty) {
+        if (query.docs.isEmpty) {
           final rootDoc = _firestore.collection('verified_staff').doc('root_admin_owner');
           await rootDoc.set({
             'name': 'Abhinav Tiwari (Super Admin)',
@@ -99,7 +99,7 @@ class AuthService {
             .limit(1)
             .get();
 
-        if (query.isEmpty) {
+        if (query.docs.isEmpty) {
           final rootDoc = _firestore.collection('verified_staff').doc('root_admin_owner');
           await rootDoc.set({
             'name': 'Abhinav Tiwari (Super Admin)',
