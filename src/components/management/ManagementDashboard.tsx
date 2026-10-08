@@ -7,6 +7,7 @@ import { BroadcastCenter } from './BroadcastCenter';
 import { FeeManagementView } from './FeeManagementView';
 import { ExamMarksPtmManager } from './ExamMarksPtmManager';
 import { StaffAccessManagementView } from './StaffAccessManagementView';
+import { ManagementLoginView } from './ManagementLoginView';
 import {
   LayoutDashboard,
   UserCheck,
@@ -48,6 +49,7 @@ export const ManagementDashboard: React.FC = () => {
   const [liveClassTarget, setLiveClassTarget] = useState('Class 10-A');
   const [showStartLiveModal, setShowStartLiveModal] = useState(false);
   const [showFacultySwitchModal, setShowFacultySwitchModal] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const isClassTeacher = currentUser.role === 'teacher';
   const isPrincipalOrManager = currentUser.role === 'principal' || currentUser.role === 'manager';
@@ -58,6 +60,10 @@ export const ManagementDashboard: React.FC = () => {
     startLiveClass(liveTitle, liveSubject, liveClassTarget);
     setShowStartLiveModal(false);
   };
+
+  if (isLoggedOut) {
+    return <ManagementLoginView onLoginSuccess={() => setIsLoggedOut(false)} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -95,30 +101,39 @@ export const ManagementDashboard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowFacultySwitchModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition"
+              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition"
               title="Switch between Teacher, Class Teacher, Principal, or Admin accounts"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Switch Faculty Login</span>
+              <span>Switch Faculty</span>
             </button>
 
             <button
               onClick={() => setShowStartLiveModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition"
+              className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition"
             >
               <Video className="w-3.5 h-3.5" />
-              <span>Host Live Class</span>
+              <span>Host Live</span>
             </button>
 
             {pendingStudents.length > 0 && (
               <button
                 onClick={() => setActiveTab('approvals')}
-                className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs flex items-center gap-1.5 transition"
+                className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs flex items-center gap-1.5 transition"
               >
                 <UserCheck className="w-3.5 h-3.5" />
-                <span>Verify Pending ({pendingStudents.length})</span>
+                <span>Verify ({pendingStudents.length})</span>
               </button>
             )}
+
+            <button
+              onClick={() => setIsLoggedOut(true)}
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-950/50 hover:text-rose-300 hover:border-rose-500/40 text-slate-300 border border-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-md transition"
+              title="Log Out of Faculty Portal"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span>Log Out</span>
+            </button>
           </div>
         </div>
 

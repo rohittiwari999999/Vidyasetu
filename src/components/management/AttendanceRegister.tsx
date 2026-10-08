@@ -13,9 +13,16 @@ import {
 } from 'lucide-react';
 
 export const AttendanceRegister: React.FC = () => {
-  const { attendanceMap, updateAttendance, saveBulkAttendance } = useSchool();
-  const [selectedClass, setSelectedClass] = useState('Class 10-A');
+  const { attendanceMap, updateAttendance, saveBulkAttendance, currentUser } = useSchool();
+  const [selectedClass, setSelectedClass] = useState(() => currentUser.teacherDetails?.assignedClass || 'Class 10-A');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Keep selectedClass updated if currentUser changes to another class teacher
+  React.useEffect(() => {
+    if (currentUser.teacherDetails?.assignedClass) {
+      setSelectedClass(currentUser.teacherDetails.assignedClass);
+    }
+  }, [currentUser]);
 
   const students = SAMPLE_STUDENTS_CLASS_10A;
   const total = students.length;
@@ -45,8 +52,13 @@ export const AttendanceRegister: React.FC = () => {
                 Digital Attendance Register
               </h2>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Class Teacher Daily Roll Call • Synced to Student/Parent App & Cloud Firestore in Realtime
+            <p className="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+              <span>Class Teacher Daily Roll Call • Synced to Student/Parent App & Cloud Firestore in Realtime</span>
+              {currentUser.teacherDetails?.assignedClass && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-[10px] border border-emerald-500/30">
+                  CT In-Charge: {currentUser.name} ({currentUser.teacherDetails.assignedClass})
+                </span>
+              )}
             </p>
           </div>
 

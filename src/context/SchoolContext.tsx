@@ -122,7 +122,21 @@ const STORAGE_KEY_PREFIX = 'vidyasetu_v1_';
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserProfile[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    if (saved) {
+      try {
+        const parsed: UserProfile[] = JSON.parse(saved);
+        const merged = [...parsed];
+        INITIAL_USERS.forEach((initUser) => {
+          if (!merged.some((u) => u.id === initUser.id || u.email.toLowerCase() === initUser.email.toLowerCase())) {
+            merged.push(initUser);
+          }
+        });
+        return merged;
+      } catch (_) {
+        return INITIAL_USERS;
+      }
+    }
+    return INITIAL_USERS;
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
@@ -175,7 +189,21 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Persistent Verified Staff Roster (RBAC & Pre-Verification)
   const [verifiedStaffList, setVerifiedStaffList] = useState<VerifiedStaffItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'verified_staff');
-    return saved ? JSON.parse(saved) : INITIAL_VERIFIED_STAFF;
+    if (saved) {
+      try {
+        const parsed: VerifiedStaffItem[] = JSON.parse(saved);
+        const merged = [...parsed];
+        INITIAL_VERIFIED_STAFF.forEach((initStaff) => {
+          if (!merged.some((s) => s.id === initStaff.id || s.email.toLowerCase() === initStaff.email.toLowerCase())) {
+            merged.push(initStaff);
+          }
+        });
+        return merged;
+      } catch (_) {
+        return INITIAL_VERIFIED_STAFF;
+      }
+    }
+    return INITIAL_VERIFIED_STAFF;
   });
 
   // Daily attendance state for Class 10-A
