@@ -32,7 +32,7 @@ class _StudentReportCardPtmScreenState extends ConsumerState<StudentReportCardPt
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserModelProvider);
+    final user = ref.watch(currentUserProfileProvider).value;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -130,12 +130,12 @@ class _StudentReportCardPtmScreenState extends ConsumerState<StudentReportCardPt
                           border: Border.all(color: Colors.indigoAccent),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('VS', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.black, fontSize: 18)),
+                        child: const Text('VS', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 18)),
                       ),
                       const SizedBox(height: 8),
                       const Text(
                         'DELHI MODERN ACADEMY',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.extrabold, fontSize: 15, letterSpacing: 0.5),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 0.5),
                       ),
                       const Text(
                         'Affiliated to CBSE, New Delhi • Senior Secondary Board',
@@ -220,7 +220,7 @@ class _StudentReportCardPtmScreenState extends ConsumerState<StudentReportCardPt
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: const [
-                          Text('91.2%', style: TextStyle(color: Color(0xFF6EE7B7), fontWeight: FontWeight.black, fontSize: 18)),
+                          Text('91.2%', style: TextStyle(color: Color(0xFF6EE7B7), fontWeight: FontWeight.w900, fontSize: 18)),
                           Text('Grade: A1 (Outstanding)', style: TextStyle(color: Color(0xFF6EE7B7), fontSize: 10, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -329,7 +329,7 @@ class _StudentReportCardPtmScreenState extends ConsumerState<StudentReportCardPt
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.emerald.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
                       child: const Text('SCHEDULED', style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   ],
