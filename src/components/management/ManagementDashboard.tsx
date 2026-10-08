@@ -5,6 +5,7 @@ import { AttendanceRegister } from './AttendanceRegister';
 import { HomeworkManager } from './HomeworkManager';
 import { BroadcastCenter } from './BroadcastCenter';
 import { FeeManagementView } from './FeeManagementView';
+import { ExamMarksPtmManager } from './ExamMarksPtmManager';
 import {
   LayoutDashboard,
   UserCheck,
@@ -33,7 +34,7 @@ export const ManagementDashboard: React.FC = () => {
     setActiveLiveClassModal,
   } = useSchool();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'attendance' | 'homework' | 'broadcast' | 'fees' | 'live'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'attendance' | 'homework' | 'broadcast' | 'fees' | 'live' | 'exams_ptm'>('overview');
   const [liveSubject, setLiveSubject] = useState('Mathematics');
   const [liveTitle, setLiveTitle] = useState('Class 10-A: Real Numbers & Revision Drill');
   const [liveClassTarget, setLiveClassTarget] = useState('Class 10-A');
@@ -193,6 +194,18 @@ export const ManagementDashboard: React.FC = () => {
             <Video className="w-4 h-4" />
             <span>Live Classroom</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('exams_ptm')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition ${
+              activeTab === 'exams_ptm'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Award className="w-4 h-4 text-cyan-400" />
+            <span>Exam Marks & PTM</span>
+          </button>
         </div>
       </div>
 
@@ -284,6 +297,15 @@ export const ManagementDashboard: React.FC = () => {
                   <Radio className="w-5 h-5 text-amber-400 mb-2 group-hover:scale-110 transition" />
                   <h4 className="font-bold text-white text-xs">Class Push Circular</h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">Urgent parent broadcast</p>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('exams_ptm')}
+                  className="bg-slate-950/70 border border-slate-800 hover:border-cyan-500/60 p-4 rounded-2xl text-left transition group"
+                >
+                  <Award className="w-5 h-5 text-cyan-400 mb-2 group-hover:scale-110 transition" />
+                  <h4 className="font-bold text-white text-xs">Exams & PTM Desk</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Marks entry & consultations</p>
                 </button>
               </div>
 
@@ -420,6 +442,8 @@ export const ManagementDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'exams_ptm' && <ExamMarksPtmManager />}
 
       {/* Start Live Session Modal */}
       {showStartLiveModal && (

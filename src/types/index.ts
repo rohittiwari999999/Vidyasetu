@@ -168,3 +168,30 @@ export interface TimetableSlot {
   teacher: string;
   room: string;
 }
+
+export interface PtmStudentSlot {
+  studentId: string;
+  studentName: string;
+  rollNo: string;
+  parentName: string;
+  parentPhone: string;
+  slotTime: string;
+  attendanceStatus: 'scheduled' | 'attended' | 'absent' | 'rescheduled';
+  teacherFeedback: string;
+  parentRemarks?: string;
+  actionItems?: string;
+}
+
+export interface PtmMeeting {
+  id: string;
+  title: string;
+  classId: string;
+  scheduledDate: string;
+  timeSlot: string;
+  venue: string;
+  meetingMode: 'offline' | 'online';
+  meetLink?: string;
+  agenda: string;
+  status: 'upcoming' | 'ongoing' | 'completed';
+  slots: PtmStudentSlot[];
+}

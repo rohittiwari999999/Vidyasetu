@@ -7,6 +7,8 @@ import {
   LiveClassSession,
   FeeRecord,
   ExamReport,
+  PtmMeeting,
+  PtmStudentSlot,
   UserRole,
 } from '../types';
 import {
@@ -17,6 +19,7 @@ import {
   INITIAL_LIVE_CLASSES,
   INITIAL_FEE_RECORDS,
   INITIAL_EXAM_REPORTS,
+  INITIAL_PTM_MEETINGS,
   SAMPLE_STUDENTS_CLASS_10A,
 } from '../data/mockData';
 import confetti from 'canvas-confetti';
@@ -80,8 +83,17 @@ interface SchoolContextType {
   setActiveLiveClassModal: (session: LiveClassSession | null) => void;
   startLiveClass: (title: string, subject: string, classId: string) => void;
 
-  // Exam Reports
+  // Exam Reports & Marks Management
   examReports: ExamReport[];
+  updateExamReport: (report: ExamReport) => void;
+  saveStudentMarks: (studentId: string, subjectName: string, marksObtained: number, maxMarks: number, remarks?: string) => void;
+  publishExamResults: (examName: string, classId: string) => void;
+
+  // PTM Management
+  ptmMeetings: PtmMeeting[];
+  schedulePtm: (meeting: Omit<PtmMeeting, 'id' | 'slots'>) => void;
+  updatePtmSlot: (meetingId: string, slotData: PtmStudentSlot) => void;
+  sendPtmReminder: (meetingId: string) => void;
 
   // Push Notifications simulation
   activePushNotification: PushNotificationEvent | null;
@@ -104,6 +116,11 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const savedId = localStorage.getItem(STORAGE_KEY_PREFIX + 'current_user_id');
+    if (savedId) {
+      const match = users.find((u) => u.id === savedId);
+      if (match) return match;
+    }
     // Default to Teacher Mrs. Meenakshi Sharma to showcase class teacher view immediately
     return users.find((u) => u.id === 'user-teacher-1') || users[0];
   });
@@ -135,7 +152,15 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return saved ? JSON.parse(saved) : INITIAL_LIVE_CLASSES;
   });
 
-  const [examReports] = useState<ExamReport[]>(INITIAL_EXAM_REPORTS);
+  const [examReports, setExamReports] = useState<ExamReport[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'exam_reports');
+    return saved ? JSON.parse(saved) : INITIAL_EXAM_REPORTS;
+  });
+
+  const [ptmMeetings, setPtmMeetings] = useState<PtmMeeting[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'ptm_meetings');
+    return saved ? JSON.parse(saved) : INITIAL_PTM_MEETINGS;
+  });
 
   // Daily attendance state for Class 10-A
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'present' | 'absent' | 'late' | 'leave'>>(() => {
@@ -150,6 +175,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activePushNotification, setActivePushNotification] = useState<PushNotificationEvent | null>(null);
 
   // Sync state to LocalStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user_id', currentUser.id);
+  }, [currentUser]);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'users', JSON.stringify(users));
   }, [users]);
@@ -169,6 +198,14 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'fees', JSON.stringify(feeRecords));
   }, [feeRecords]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'exam_reports', JSON.stringify(examReports));
+  }, [examReports]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'ptm_meetings', JSON.stringify(ptmMeetings));
+  }, [ptmMeetings]);
 
   // Keep currentUser synced if user list changes
   useEffect(() => {
@@ -448,6 +485,138 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
+  const updateExamReport = (report: ExamReport) => {
+    setExamReports((prev) => {
+      const idx = prev.findIndex((r) => r.id === report.id || (r.studentId === report.studentId && r.examName === report.examName));
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = report;
+        return updated;
+      }
+      return [...prev, report];
+    });
+  };
+
+  const saveStudentMarks = (
+    studentId: string,
+    subjectName: string,
+    marksObtained: number,
+    maxMarks: number,
+    remarks?: string
+  ) => {
+    setExamReports((prev) => {
+      return prev.map((report) => {
+        if (report.studentId === studentId) {
+          const subjects = [...report.subjects];
+          const subIdx = subjects.findIndex((s) => s.name.toLowerCase() === subjectName.toLowerCase());
+          const ratio = maxMarks > 0 ? marksObtained / maxMarks : 0;
+          const grade = ratio >= 0.91 ? 'A1' :
+                        ratio >= 0.81 ? 'A2' :
+                        ratio >= 0.71 ? 'B1' :
+                        ratio >= 0.61 ? 'B2' :
+                        ratio >= 0.51 ? 'C1' :
+                        ratio >= 0.41 ? 'C2' :
+                        ratio >= 0.33 ? 'D' : 'E';
+
+          if (subIdx >= 0) {
+            subjects[subIdx] = { ...subjects[subIdx], marksObtained, maxMarks, grade };
+          } else {
+            subjects.push({ name: subjectName, marksObtained, maxMarks, grade });
+          }
+
+          const obtainedMarks = subjects.reduce((sum, s) => sum + s.marksObtained, 0);
+          const totalMarks = subjects.reduce((sum, s) => sum + s.maxMarks, 0);
+          const percentage = totalMarks > 0 ? Number(((obtainedMarks / totalMarks) * 100).toFixed(1)) : 0;
+          const overallGrade = percentage >= 91 ? 'A1' : percentage >= 81 ? 'A2' : percentage >= 71 ? 'B1' : percentage >= 61 ? 'B2' : percentage >= 51 ? 'C1' : percentage >= 41 ? 'C2' : percentage >= 33 ? 'D' : 'E';
+
+          return {
+            ...report,
+            subjects,
+            obtainedMarks,
+            totalMarks,
+            percentage,
+            overallGrade,
+            teacherRemarks: remarks || report.teacherRemarks,
+          };
+        }
+        return report;
+      });
+    });
+  };
+
+  const publishExamResults = (examName: string, classId: string) => {
+    showSimulatedPush(
+      'Exam Results Published 🎓',
+      `${examName} marksheets for ${classId} are published and live on Parent/Student App. Push circular sent.`,
+      'broadcast'
+    );
+    try {
+      confetti({ particleCount: 70, spread: 80, origin: { y: 0.5 } });
+    } catch {
+      // safe fallback
+    }
+  };
+
+  const schedulePtm = (meeting: Omit<PtmMeeting, 'id' | 'slots'>) => {
+    const newId = 'ptm-' + Date.now();
+    const slots: PtmStudentSlot[] = SAMPLE_STUDENTS_CLASS_10A.slice(0, 8).map((stu, i) => {
+      const startHour = 9 + Math.floor((i * 15) / 60);
+      const startMin = (i * 15) % 60;
+      const endMin = (startMin + 15) % 60;
+      const endHour = startMin + 15 >= 60 ? startHour + 1 : startHour;
+      const formatTime = (h: number, m: number) =>
+        `${(h % 12 || 12).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+
+      return {
+        studentId: stu.id,
+        studentName: stu.name,
+        rollNo: stu.rollNumber,
+        parentName: `Parent of ${stu.name}`,
+        parentPhone: '+91 98100 ' + (10000 + i),
+        slotTime: `${formatTime(startHour, startMin)} - ${formatTime(endHour, endMin)}`,
+        attendanceStatus: 'scheduled',
+        teacherFeedback: '',
+      };
+    });
+
+    const newMeeting: PtmMeeting = {
+      ...meeting,
+      id: newId,
+      slots,
+    };
+
+    setPtmMeetings((prev) => [newMeeting, ...prev]);
+    showSimulatedPush(
+      'PTM Scheduled 📅',
+      `"${meeting.title}" scheduled for ${meeting.scheduledDate} (${meeting.timeSlot}). Invitations sent to parents.`,
+      'broadcast'
+    );
+  };
+
+  const updatePtmSlot = (meetingId: string, slotData: PtmStudentSlot) => {
+    setPtmMeetings((prev) =>
+      prev.map((m) => {
+        if (m.id === meetingId) {
+          const updatedSlots = m.slots.map((s) => (s.studentId === slotData.studentId ? slotData : s));
+          if (!m.slots.some((s) => s.studentId === slotData.studentId)) {
+            updatedSlots.push(slotData);
+          }
+          return { ...m, slots: updatedSlots };
+        }
+        return m;
+      })
+    );
+  };
+
+  const sendPtmReminder = (meetingId: string) => {
+    const meeting = ptmMeetings.find((m) => m.id === meetingId);
+    showSimulatedPush(
+      'PTM Reminder Sent 📢',
+      `Urgent SMS and app notification broadcasted to all parents of ${meeting?.classId || 'Class 10-A'} with allotted time slots.`,
+      'broadcast'
+    );
+  };
+
   const switchRole = (role: UserRole, specificUserId?: string) => {
     if (specificUserId) {
       const match = users.find((u) => u.id === specificUserId);
@@ -463,18 +632,23 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const resetToDefaults = () => {
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user_id');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'users');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'homework');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'submissions');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'broadcasts');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'fees');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'live_classes');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'exam_reports');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'ptm_meetings');
     setUsers(INITIAL_USERS);
     setHomeworkList(INITIAL_HOMEWORK);
     setSubmissions(INITIAL_SUBMISSIONS);
     setBroadcasts(INITIAL_BROADCASTS);
     setFeeRecords(INITIAL_FEE_RECORDS);
     setLiveClasses(INITIAL_LIVE_CLASSES);
+    setExamReports(INITIAL_EXAM_REPORTS);
+    setPtmMeetings(INITIAL_PTM_MEETINGS);
     setCurrentUser(INITIAL_USERS[2]); // Mrs. Meenakshi Sharma
     showSimulatedPush('System Reset', 'All demo data restored to initial Indian school state.', 'approval');
   };
@@ -508,6 +682,13 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setActiveLiveClassModal,
         startLiveClass,
         examReports,
+        updateExamReport,
+        saveStudentMarks,
+        publishExamResults,
+        ptmMeetings,
+        schedulePtm,
+        updatePtmSlot,
+        sendPtmReminder,
         activePushNotification,
         clearPushNotification,
         showSimulatedPush,

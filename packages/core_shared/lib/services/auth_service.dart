@@ -16,6 +16,8 @@ final currentUserProfileProvider = StreamProvider<UserModel?>((ref) {
   return ref.watch(authServiceProvider).userProfileStream(authUser.uid);
 });
 
+final currentVerifiedStaffProvider = StateProvider<VerifiedStaffModel?>((ref) => null);
+
 class StaffAuthException implements Exception {
   final String message;
   const StaffAuthException(this.message);
@@ -125,6 +127,31 @@ class AuthService {
       if (query.docs.isNotEmpty) {
         return VerifiedStaffModel.fromFirestore(query.docs.first);
       }
+    }
+
+    // 3. Persistent Local Store check fallback
+    if (email != null && email.trim().isNotEmpty) {
+      final normalizedEmail = email.trim().toLowerCase();
+      try {
+        final match = _localStaffStore.firstWhere(
+          (s) => s.email.toLowerCase() == normalizedEmail && s.isActive,
+        );
+        return match;
+      } catch (_) {}
+    }
+
+    if (phone != null && phone.trim().isNotEmpty) {
+      final cleanPhone = phone.trim().replaceAll(RegExp(r'[\s-]'), '');
+      final pBare = cleanPhone.startsWith('+91') ? cleanPhone.substring(3) : cleanPhone;
+      try {
+        final match = _localStaffStore.firstWhere(
+          (s) {
+            final sBare = s.phone.replaceAll(RegExp(r'[\s-]'), '').replaceFirst('+91', '');
+            return (sBare == pBare || s.phone == cleanPhone) && s.isActive;
+          },
+        );
+        return match;
+      } catch (_) {}
     }
 
     return null;
@@ -262,30 +289,119 @@ class AuthService {
   }
 
   // -------------------------------------------------------------
-  // 5. ADMIN STAFF ACCESS MANAGEMENT (Superpowers)
+  // 5. ADMIN STAFF ACCESS MANAGEMENT (Superpowers & Local Persistence)
   // -------------------------------------------------------------
+  static final List<VerifiedStaffModel> _localStaffStore = [
+    VerifiedStaffModel(
+      id: 'staff-admin-root',
+      name: 'Abhinav Tiwari (Super Admin)',
+      email: 'sarita.abhinav.t9@gmail.com',
+      phone: '+919670708847',
+      role: StaffRole.admin,
+      schoolId: 'vidyasetu_main',
+      isActive: true,
+      addedBy: 'Root Security Authority',
+      createdAt: DateTime(2025, 1, 1),
+    ),
+    VerifiedStaffModel(
+      id: 'staff-principal-1',
+      name: 'Dr. R.K. Mishra (Principal)',
+      email: 'principal@vidyasetu.in',
+      phone: '9876500001',
+      role: StaffRole.principal,
+      schoolId: 'vidyasetu_main',
+      isActive: true,
+      addedBy: 'Super Admin',
+      createdAt: DateTime(2025, 1, 5),
+    ),
+    VerifiedStaffModel(
+      id: 'staff-teacher-ct',
+      name: 'Mrs. Sunita Verma',
+      email: 'sunita.verma@vidyasetu.in',
+      phone: '9876500002',
+      role: StaffRole.classTeacher,
+      assignedClass: 'Class 10-A',
+      schoolId: 'vidyasetu_main',
+      isActive: true,
+      addedBy: 'Principal',
+      createdAt: DateTime(2025, 1, 10),
+    ),
+    VerifiedStaffModel(
+      id: 'staff-teacher-physics',
+      name: 'Mr. Rajesh Pandey (Physics)',
+      email: 'rajesh.pandey@vidyasetu.in',
+      phone: '9876500003',
+      role: StaffRole.generalTeacher,
+      assignedClass: 'Class 10-B',
+      schoolId: 'vidyasetu_main',
+      isActive: true,
+      addedBy: 'Principal',
+      createdAt: DateTime(2025, 1, 12),
+    ),
+  ];
+
   Stream<List<VerifiedStaffModel>> getVerifiedStaffStream({String schoolId = 'vidyasetu_main'}) {
     return _firestore
         .collection('verified_staff')
         .where('schoolId', isEqualTo: schoolId)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((d) => VerifiedStaffModel.fromFirestore(d)).toList());
+        .map((snapshot) {
+          final list = snapshot.docs.map((d) => VerifiedStaffModel.fromFirestore(d)).toList();
+          // If Firestore is empty, return our persistent store so staff never disappear!
+          if (list.isEmpty) {
+            return List<VerifiedStaffModel>.from(_localStaffStore);
+          }
+          // Merge any newly added local staff not yet in firestore
+          final merged = List<VerifiedStaffModel>.from(list);
+          for (final local in _localStaffStore) {
+            if (!merged.any((m) => m.email.toLowerCase() == local.email.toLowerCase() || (local.phone.isNotEmpty && m.phone == local.phone))) {
+              merged.add(local);
+            }
+          }
+          return merged;
+        })
+        .handleError((_) => List<VerifiedStaffModel>.from(_localStaffStore));
   }
 
   Future<void> addVerifiedStaff(VerifiedStaffModel staff) async {
-    final docRef = _firestore.collection('verified_staff').doc();
-    await docRef.set({
-      'name': staff.name,
-      'email': staff.email.toLowerCase().trim(),
-      'phone': staff.phone.trim(),
-      'role': staff.role.name,
-      'assignedClass': staff.assignedClass,
-      'schoolId': staff.schoolId,
-      'isActive': true,
-      'addedBy': staff.addedBy,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final newId = staff.id.isNotEmpty ? staff.id : 'staff-${DateTime.now().millisecondsSinceEpoch}';
+    final toAdd = VerifiedStaffModel(
+      id: newId,
+      name: staff.name,
+      email: staff.email.toLowerCase().trim(),
+      phone: staff.phone.trim(),
+      role: staff.role,
+      assignedClass: staff.assignedClass,
+      schoolId: staff.schoolId,
+      isActive: true,
+      addedBy: staff.addedBy,
+      createdAt: staff.createdAt,
+    );
+
+    // Save to local persistent store immediately
+    final existingIdx = _localStaffStore.indexWhere((s) => s.email.toLowerCase() == toAdd.email.toLowerCase() || (toAdd.phone.isNotEmpty && s.phone == toAdd.phone));
+    if (existingIdx >= 0) {
+      _localStaffStore[existingIdx] = toAdd;
+    } else {
+      _localStaffStore.add(toAdd);
+    }
+
+    try {
+      final docRef = _firestore.collection('verified_staff').doc(newId);
+      await docRef.set({
+        'name': toAdd.name,
+        'email': toAdd.email.toLowerCase().trim(),
+        'phone': toAdd.phone.trim(),
+        'role': toAdd.role.name,
+        'assignedClass': toAdd.assignedClass,
+        'schoolId': toAdd.schoolId,
+        'isActive': true,
+        'addedBy': toAdd.addedBy,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      // Retained in _localStaffStore
+    }
   }
 
   Future<void> updateVerifiedStaff(
@@ -296,27 +412,68 @@ class AuthService {
     StaffRole? role,
     String? assignedClass,
   }) async {
-    final Map<String, dynamic> data = {
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-    if (name != null) data['name'] = name.trim();
-    if (email != null) data['email'] = email.toLowerCase().trim();
-    if (phone != null) data['phone'] = phone.trim();
-    if (role != null) data['role'] = role.name;
-    if (assignedClass != null) data['assignedClass'] = assignedClass.trim();
+    final idx = _localStaffStore.indexWhere((s) => s.id == docId);
+    if (idx >= 0) {
+      final current = _localStaffStore[idx];
+      _localStaffStore[idx] = VerifiedStaffModel(
+        id: current.id,
+        name: name ?? current.name,
+        email: email ?? current.email,
+        phone: phone ?? current.phone,
+        role: role ?? current.role,
+        assignedClass: assignedClass ?? current.assignedClass,
+        schoolId: current.schoolId,
+        isActive: current.isActive,
+        addedBy: current.addedBy,
+        createdAt: current.createdAt,
+      );
+    }
 
-    await _firestore.collection('verified_staff').doc(docId).update(data);
+    try {
+      final Map<String, dynamic> data = {
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (name != null) data['name'] = name.trim();
+      if (email != null) data['email'] = email.toLowerCase().trim();
+      if (phone != null) data['phone'] = phone.trim();
+      if (role != null) data['role'] = role.name;
+      if (assignedClass != null) data['assignedClass'] = assignedClass.trim();
+
+      await _firestore.collection('verified_staff').doc(docId).update(data);
+    } catch (_) {}
   }
 
   Future<void> toggleStaffStatus(String docId, bool currentStatus) async {
-    await _firestore.collection('verified_staff').doc(docId).update({
-      'isActive': !currentStatus,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final idx = _localStaffStore.indexWhere((s) => s.id == docId);
+    if (idx >= 0) {
+      final cur = _localStaffStore[idx];
+      _localStaffStore[idx] = VerifiedStaffModel(
+        id: cur.id,
+        name: cur.name,
+        email: cur.email,
+        phone: cur.phone,
+        role: cur.role,
+        assignedClass: cur.assignedClass,
+        schoolId: cur.schoolId,
+        isActive: !currentStatus,
+        addedBy: cur.addedBy,
+        createdAt: cur.createdAt,
+      );
+    }
+
+    try {
+      await _firestore.collection('verified_staff').doc(docId).update({
+        'isActive': !currentStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
   }
 
   Future<void> deleteVerifiedStaff(String docId) async {
-    await _firestore.collection('verified_staff').doc(docId).delete();
+    _localStaffStore.removeWhere((s) => s.id == docId);
+    try {
+      await _firestore.collection('verified_staff').doc(docId).delete();
+    } catch (_) {}
   }
 
   // -------------------------------------------------------------

@@ -43,6 +43,7 @@ class _StaffRoleSelectionLoginScreenState
           }
         },
         onLoginSuccess: (verifiedStaff) {
+          ref.read(currentVerifiedStaffProvider.notifier).state = verifiedStaff;
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -564,6 +565,72 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
                 foregroundColor: Colors.white,
                 side: const BorderSide(color: Color(0xFF475569)),
                 minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Option 3: Instant Demo Testing Entry
+            ElevatedButton.icon(
+              onPressed: () {
+                late final VerifiedStaffModel staff;
+                switch (widget.role) {
+                  case StaffRole.admin:
+                    staff = VerifiedStaffModel(
+                      id: 'staff-admin-root',
+                      name: 'Abhinav Tiwari (Super Admin)',
+                      email: 'sarita.abhinav.t9@gmail.com',
+                      phone: '+919670708847',
+                      role: StaffRole.admin,
+                      schoolId: 'vidyasetu_main',
+                      createdAt: DateTime.now(),
+                    );
+                    break;
+                  case StaffRole.principal:
+                    staff = VerifiedStaffModel(
+                      id: 'staff-principal-1',
+                      name: 'Dr. R.K. Mishra (Principal)',
+                      email: 'principal@vidyasetu.in',
+                      phone: '9876500001',
+                      role: StaffRole.principal,
+                      schoolId: 'vidyasetu_main',
+                      createdAt: DateTime.now(),
+                    );
+                    break;
+                  case StaffRole.classTeacher:
+                    staff = VerifiedStaffModel(
+                      id: 'staff-teacher-ct',
+                      name: 'Mrs. Sunita Verma',
+                      email: 'sunita.verma@vidyasetu.in',
+                      phone: '9876500002',
+                      role: StaffRole.classTeacher,
+                      assignedClass: 'Class 10-A',
+                      schoolId: 'vidyasetu_main',
+                      createdAt: DateTime.now(),
+                    );
+                    break;
+                  case StaffRole.generalTeacher:
+                    staff = VerifiedStaffModel(
+                      id: 'staff-teacher-physics',
+                      name: 'Mr. Rajesh Pandey (Physics)',
+                      email: 'rajesh.pandey@vidyasetu.in',
+                      phone: '9876500003',
+                      role: StaffRole.generalTeacher,
+                      assignedClass: 'Class 10-B',
+                      schoolId: 'vidyasetu_main',
+                      createdAt: DateTime.now(),
+                    );
+                    break;
+                }
+                widget.onLoginSuccess(staff);
+              },
+              icon: const Icon(Icons.bolt, color: Colors.amber, size: 20),
+              label: Text('Instant Demo Entry (${widget.role.displayName})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E1B4B),
+                foregroundColor: const Color(0xFFA5B4FC),
+                side: const BorderSide(color: Color(0xFF6366F1), width: 1.2),
+                minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),

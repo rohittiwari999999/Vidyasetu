@@ -399,6 +399,31 @@ class _StudentLoginScreenState extends ConsumerState<StudentLoginScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 14),
+
+                    // Button 3: Instant Demo Student Entry (Bina Number Dale Testing Entry)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Logging in as Demo Student: Aarav Sharma (Class 10-A, Roll 12)'),
+                            backgroundColor: Color(0xFF10B981),
+                          ),
+                        );
+                        context.go('/home');
+                      },
+                      icon: const Icon(Icons.bolt, color: Colors.amber, size: 22),
+                      label: const Text('Instant Demo Student Login (Skip Phone & OTP)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E1B4B),
+                        foregroundColor: const Color(0xFFA5B4FC),
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: const BorderSide(color: Color(0xFF6366F1), width: 1.2),
+                        ),
+                      ),
+                    ),
                   ] else ...[
                     // Phone OTP Mode
                     Card(

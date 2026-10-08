@@ -6,6 +6,7 @@ import '../../attendance/screens/attendance_calendar_screen.dart';
 import '../../fees/screens/fee_ledger_screen.dart';
 import '../../live_class/screens/live_class_screen.dart';
 import '../../notices/screens/notices_screen.dart';
+import '../../academic/screens/student_report_card_ptm_screen.dart';
 
 class StudentHomeScreen extends ConsumerWidget {
   final void Function(int index)? onNavigateTab;
@@ -159,12 +160,12 @@ class StudentHomeScreen extends ConsumerWidget {
                   },
                 ),
                 _interactiveCard(
-                  title: 'Report Card',
+                  title: 'Report Card & PTM',
                   subtitle: 'Term 1: 91.2% (A1)',
                   icon: Icons.assessment,
                   accentColor: Colors.cyanAccent,
                   onTap: () {
-                    _showReportCardModal(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentReportCardPtmScreen()));
                   },
                 ),
               ],

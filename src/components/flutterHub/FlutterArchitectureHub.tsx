@@ -4,6 +4,7 @@ import { Deliverable2Structure } from './Deliverable2Structure';
 import { Deliverable3AuthCode } from './Deliverable3AuthCode';
 import { Deliverable4HomeworkCode } from './Deliverable4HomeworkCode';
 import { Deliverable5BroadcastCode } from './Deliverable5BroadcastCode';
+import { Deliverable6ExamsPtmCode } from './Deliverable6ExamsPtmCode';
 import { PlayConsolePublishGuide } from './PlayConsolePublishGuide';
 import { NativeBuildConfigsView } from './NativeBuildConfigsView';
 import { PlayConsoleAssetVault } from './PlayConsoleAssetVault';
@@ -14,6 +15,7 @@ import {
   ShieldCheck,
   BookOpen,
   Radio,
+  Award,
   Download,
   Sparkles,
   Play,
@@ -24,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export const FlutterArchitectureHub: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'asset_vault' | 'play_publish' | 'native_configs' | 1 | 2 | 3 | 4 | 5>('asset_vault');
+  const [activeTab, setActiveTab] = useState<'asset_vault' | 'play_publish' | 'native_configs' | 1 | 2 | 3 | 4 | 5 | 6>('asset_vault');
   const [isZipping, setIsZipping] = useState(false);
   const [zipProgress, setZipProgress] = useState(0);
 
@@ -205,6 +207,21 @@ export const FlutterArchitectureHub: React.FC = () => {
             </div>
             <div className="text-xs font-bold leading-tight">Broadcast Messaging &amp; FCM</div>
           </button>
+
+          <button
+            onClick={() => setActiveTab(6)}
+            className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+              activeTab === 6
+                ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg'
+                : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <Award className="w-4 h-4 text-cyan-300" />
+              <span className="text-[10px] font-mono font-bold opacity-80">PART 6</span>
+            </div>
+            <div className="text-xs font-bold leading-tight">Exam Marks &amp; PTM Module</div>
+          </button>
         </div>
       </div>
 
@@ -218,6 +235,7 @@ export const FlutterArchitectureHub: React.FC = () => {
         {activeTab === 3 && <Deliverable3AuthCode />}
         {activeTab === 4 && <Deliverable4HomeworkCode />}
         {activeTab === 5 && <Deliverable5BroadcastCode />}
+        {activeTab === 6 && <Deliverable6ExamsPtmCode />}
       </div>
     </div>
   );

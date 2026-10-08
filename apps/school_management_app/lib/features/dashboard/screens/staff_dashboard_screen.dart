@@ -7,6 +7,7 @@ import '../../homework/screens/create_homework_screen.dart';
 import '../../broadcast/screens/compose_broadcast_screen.dart';
 import '../../approvals/screens/pending_approvals_screen.dart';
 import '../../admin/screens/staff_access_management_screen.dart';
+import '../../exams_ptm/screens/exam_marks_ptm_screen.dart';
 
 class StaffDashboardScreen extends ConsumerWidget {
   final void Function(int tabIndex)? onNavigateTab;
@@ -14,6 +15,36 @@ class StaffDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final verifiedStaff = ref.watch(currentVerifiedStaffProvider);
+    final userProfile = ref.watch(currentUserProfileProvider).value;
+    final authUser = ref.watch(authStateChangesProvider).value;
+
+    final displayName = (verifiedStaff?.name.isNotEmpty == true)
+        ? verifiedStaff!.name
+        : (userProfile?.name.isNotEmpty == true
+            ? userProfile!.name
+            : (authUser?.displayName?.isNotEmpty == true
+                ? authUser!.displayName!
+                : (authUser?.email != null && authUser!.email!.isNotEmpty
+                    ? authUser.email!.split('@').first.replaceAll('.', ' ').toUpperCase()
+                    : (authUser?.phoneNumber ?? 'Faculty Member'))));
+
+    final staffRoleStr = (verifiedStaff != null)
+        ? verifiedStaff.role.displayName
+        : (userProfile != null
+            ? (userProfile.teacherDetails?.designation ?? userProfile.role.name.toUpperCase())
+            : 'School Faculty');
+
+    final assignedClassStr = (verifiedStaff?.assignedClass.isNotEmpty == true)
+        ? verifiedStaff!.assignedClass
+        : (userProfile?.teacherDetails?.assignedClass?.isNotEmpty == true
+            ? userProfile!.teacherDetails!.assignedClass!
+            : 'All Classes Access');
+
+    final initial = displayName.trim().isNotEmpty
+        ? displayName.trim()[0].toUpperCase()
+        : 'S';
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
@@ -31,6 +62,7 @@ class StaffDashboardScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             tooltip: 'Log Out / Switch Role',
             onPressed: () async {
+              ref.read(currentVerifiedStaffProvider.notifier).state = null;
               await ref.read(authServiceProvider).signOut();
               if (context.mounted) {
                 context.go('/login');
@@ -53,21 +85,24 @@ class StaffDashboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(18),
                 child: Row(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 28,
-                      backgroundColor: Color(0xFF6366F1),
-                      child: Text('S', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                      backgroundColor: const Color(0xFF6366F1),
+                      child: Text(initial, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text('Mrs. Sunita Verma', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                          SizedBox(height: 2),
-                          Text('Senior PGT & Class Teacher (Class 10-A)', style: TextStyle(color: Color(0xFFA5B4FC), fontSize: 13)),
-                          SizedBox(height: 2),
-                          Text('VidyaSetu Academy • Affiliation #2130894', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        children: [
+                          Text(displayName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                          const SizedBox(height: 2),
+                          Text('$staffRoleStr • $assignedClassStr', style: const TextStyle(color: Color(0xFFA5B4FC), fontSize: 13)),
+                          const SizedBox(height: 2),
+                          Text(
+                            authUser?.email ?? authUser?.phoneNumber ?? 'VidyaSetu Academy • Affiliation #2130894',
+                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                          ),
                         ],
                       ),
                     ),
@@ -175,7 +210,7 @@ class StaffDashboardScreen extends ConsumerWidget {
                   icon: Icons.grade_outlined,
                   accentColor: const Color(0xFF06B6D4),
                   onTap: () {
-                    _showExamEntryDialog(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ExamMarksPtmScreen()));
                   },
                 ),
                 _actionCard(
