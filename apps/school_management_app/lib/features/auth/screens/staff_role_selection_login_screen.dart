@@ -570,70 +570,79 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
             ),
             const SizedBox(height: 14),
 
-            // Option 3: Instant Demo Testing Entry
-            ElevatedButton.icon(
-              onPressed: () {
-                late final VerifiedStaffModel staff;
-                switch (widget.role) {
-                  case StaffRole.admin:
-                    staff = VerifiedStaffModel(
-                      id: 'staff-admin-root',
-                      name: 'Abhinav Tiwari (Super Admin)',
-                      email: 'sarita.abhinav.t9@gmail.com',
-                      phone: '+919670708847',
-                      role: StaffRole.admin,
-                      schoolId: 'vidyasetu_main',
-                      createdAt: DateTime.now(),
-                    );
-                    break;
-                  case StaffRole.principal:
-                    staff = VerifiedStaffModel(
-                      id: 'staff-principal-1',
-                      name: 'Dr. R.K. Mishra (Principal)',
-                      email: 'principal@vidyasetu.in',
-                      phone: '9876500001',
-                      role: StaffRole.principal,
-                      schoolId: 'vidyasetu_main',
-                      createdAt: DateTime.now(),
-                    );
-                    break;
-                  case StaffRole.classTeacher:
-                    staff = VerifiedStaffModel(
-                      id: 'staff-teacher-ct',
-                      name: 'Mrs. Sunita Verma',
-                      email: 'sunita.verma@vidyasetu.in',
-                      phone: '9876500002',
-                      role: StaffRole.classTeacher,
-                      assignedClass: 'Class 10-A',
-                      schoolId: 'vidyasetu_main',
-                      createdAt: DateTime.now(),
-                    );
-                    break;
-                  case StaffRole.generalTeacher:
-                    staff = VerifiedStaffModel(
-                      id: 'staff-teacher-physics',
-                      name: 'Mr. Rajesh Pandey (Physics)',
-                      email: 'rajesh.pandey@vidyasetu.in',
-                      phone: '9876500003',
-                      role: StaffRole.generalTeacher,
-                      assignedClass: 'Class 10-B',
-                      schoolId: 'vidyasetu_main',
-                      createdAt: DateTime.now(),
-                    );
-                    break;
-                }
-                widget.onLoginSuccess(staff);
-              },
-              icon: const Icon(Icons.bolt, color: Colors.amber, size: 20),
-              label: Text('Instant Demo Entry (${widget.role.displayName})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E1B4B),
-                foregroundColor: const Color(0xFFA5B4FC),
-                side: const BorderSide(color: Color(0xFF6366F1), width: 1.2),
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+            // Option 3: Select from Verified Staff Roster for this Role
+            const SizedBox(height: 6),
+            Text(
+              'Select Authorized Faculty Account (${widget.role.displayName}):',
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+
+            Builder(builder: (context) {
+              final authService = ref.read(authServiceProvider);
+              final allStaff = authService.getLocalStaffList();
+              final matchingStaff = allStaff.where((s) => s.role == widget.role).toList();
+
+              if (matchingStaff.isEmpty) {
+                matchingStaff.add(
+                  VerifiedStaffModel(
+                    id: 'staff-custom-fallback',
+                    name: widget.role == StaffRole.classTeacher ? 'Mrs. Meenakshi Sharma' : 'Faculty Member',
+                    email: 'faculty@vidyasetu.edu.in',
+                    phone: '9870000000',
+                    role: widget.role,
+                    assignedClass: widget.role == StaffRole.classTeacher ? 'Class 10-A' : '',
+                    schoolId: 'vidyasetu_main',
+                    createdAt: DateTime.now(),
+                  ),
+                );
+              }
+
+              return Column(
+                children: matchingStaff.map((staff) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF334155)),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.2),
+                        child: Text(
+                          staff.name.isNotEmpty ? staff.name[0] : 'S',
+                          style: const TextStyle(color: Color(0xFFA5B4FC), fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      title: Text(
+                        staff.name,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        staff.assignedClass.isNotEmpty
+                            ? 'Class: ${staff.assignedClass} • ${staff.email}'
+                            : staff.email,
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () => widget.onLoginSuccess(staff),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F46E5),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          minimumSize: const Size(60, 32),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Login', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }),
           ] else ...[
             // Phone Auth View
             if (!_otpSent) ...[

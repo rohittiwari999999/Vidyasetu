@@ -21,6 +21,8 @@ import {
   INITIAL_EXAM_REPORTS,
   INITIAL_PTM_MEETINGS,
   SAMPLE_STUDENTS_CLASS_10A,
+  INITIAL_VERIFIED_STAFF,
+  VerifiedStaffItem,
 } from '../data/mockData';
 import confetti from 'canvas-confetti';
 
@@ -95,6 +97,14 @@ interface SchoolContextType {
   updatePtmSlot: (meetingId: string, slotData: PtmStudentSlot) => void;
   sendPtmReminder: (meetingId: string) => void;
 
+  // Staff Access Management (RBAC & Pre-Verification)
+  verifiedStaffList: VerifiedStaffItem[];
+  addVerifiedStaff: (staff: Omit<VerifiedStaffItem, 'id' | 'createdAt' | 'isActive'>) => void;
+  updateVerifiedStaff: (staffId: string, updates: Partial<VerifiedStaffItem>) => void;
+  deleteVerifiedStaff: (staffId: string) => void;
+  toggleStaffStatus: (staffId: string) => void;
+  loginAsStaffMember: (staffId: string) => void;
+
   // Push Notifications simulation
   activePushNotification: PushNotificationEvent | null;
   clearPushNotification: () => void;
@@ -162,6 +172,12 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return saved ? JSON.parse(saved) : INITIAL_PTM_MEETINGS;
   });
 
+  // Persistent Verified Staff Roster (RBAC & Pre-Verification)
+  const [verifiedStaffList, setVerifiedStaffList] = useState<VerifiedStaffItem[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'verified_staff');
+    return saved ? JSON.parse(saved) : INITIAL_VERIFIED_STAFF;
+  });
+
   // Daily attendance state for Class 10-A
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'present' | 'absent' | 'late' | 'leave'>>(() => {
     const initial: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
@@ -206,6 +222,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'ptm_meetings', JSON.stringify(ptmMeetings));
   }, [ptmMeetings]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'verified_staff', JSON.stringify(verifiedStaffList));
+  }, [verifiedStaffList]);
 
   // Keep currentUser synced if user list changes
   useEffect(() => {
@@ -617,6 +637,145 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
+  // -------------------------------------------------------------
+  // STAFF ACCESS MANAGEMENT (RBAC & Pre-Verification)
+  // -------------------------------------------------------------
+  const addVerifiedStaff = (staffData: Omit<VerifiedStaffItem, 'id' | 'createdAt' | 'isActive'>) => {
+    const newId = 'staff-' + Date.now();
+    const newStaff: VerifiedStaffItem = {
+      ...staffData,
+      id: newId,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    setVerifiedStaffList((prev) => [newStaff, ...prev]);
+
+    // Also sync into users list so they can immediately log in as this user!
+    const mappedRole: UserRole =
+      staffData.role === 'admin' ? 'manager' : staffData.role === 'principal' ? 'principal' : 'teacher';
+    const newUser: UserProfile = {
+      id: 'user-' + newId,
+      name: staffData.name,
+      email: staffData.email,
+      phone: staffData.phone,
+      role: mappedRole,
+      schoolId: 'DPS-DEL-01',
+      schoolName: 'Delhi Modern Academy, New Delhi',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      status: 'approved',
+      teacherDetails: {
+        employeeId: staffData.employeeId,
+        designation:
+          staffData.role === 'classTeacher'
+            ? `Class Teacher (${staffData.assignedClass})`
+            : staffData.role === 'principal'
+            ? 'Principal'
+            : staffData.role === 'admin'
+            ? 'Management Admin'
+            : `Teacher (${staffData.subject})`,
+        assignedClass: staffData.assignedClass,
+        subjects: [staffData.subject],
+        qualifications: 'Recognized Faculty Degree, B.Ed.',
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setUsers((prev) => [newUser, ...prev]);
+
+    showSimulatedPush(
+      'Staff Pre-Verified ✅',
+      `${staffData.name} authorized as ${staffData.role} (${staffData.assignedClass || 'General'}). Staff Access saved.`,
+      'approval'
+    );
+  };
+
+  const updateVerifiedStaff = (staffId: string, updates: Partial<VerifiedStaffItem>) => {
+    setVerifiedStaffList((prev) =>
+      prev.map((s) => (s.id === staffId ? { ...s, ...updates } : s))
+    );
+    // Also sync to users if name or assignedClass changed
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === 'user-' + staffId || u.email.toLowerCase() === updates.email?.toLowerCase()) {
+          return {
+            ...u,
+            name: updates.name || u.name,
+            phone: updates.phone || u.phone,
+            teacherDetails: u.teacherDetails
+              ? {
+                  ...u.teacherDetails,
+                  assignedClass: updates.assignedClass !== undefined ? updates.assignedClass : u.teacherDetails.assignedClass,
+                  subjects: updates.subject ? [updates.subject] : u.teacherDetails.subjects,
+                }
+              : undefined,
+          };
+        }
+        return u;
+      })
+    );
+    showSimulatedPush('Staff Record Updated', `Faculty record #${staffId} updated successfully.`, 'approval');
+  };
+
+  const deleteVerifiedStaff = (staffId: string) => {
+    setVerifiedStaffList((prev) => prev.filter((s) => s.id !== staffId));
+    showSimulatedPush('Staff Access Revoked ❌', `Pre-verified access for #${staffId} revoked immediately.`, 'approval');
+  };
+
+  const toggleStaffStatus = (staffId: string) => {
+    setVerifiedStaffList((prev) =>
+      prev.map((s) => (s.id === staffId ? { ...s, isActive: !s.isActive } : s))
+    );
+  };
+
+  const loginAsStaffMember = (staffId: string) => {
+    const staff = verifiedStaffList.find((s) => s.id === staffId);
+    if (!staff) return;
+
+    let userMatch = users.find(
+      (u) =>
+        u.email.toLowerCase() === staff.email.toLowerCase() ||
+        (staff.phone.length > 5 && u.phone.includes(staff.phone.replace(/[^0-9]/g, '').slice(-10)))
+    );
+
+    if (!userMatch) {
+      const mappedRole: UserRole =
+        staff.role === 'admin' ? 'manager' : staff.role === 'principal' ? 'principal' : 'teacher';
+      userMatch = {
+        id: 'user-' + staff.id,
+        name: staff.name,
+        email: staff.email,
+        phone: staff.phone,
+        role: mappedRole,
+        schoolId: 'DPS-DEL-01',
+        schoolName: 'Delhi Modern Academy, New Delhi',
+        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+        status: 'approved',
+        teacherDetails: {
+          employeeId: staff.employeeId,
+          designation:
+            staff.role === 'classTeacher'
+              ? `Class Teacher (${staff.assignedClass})`
+              : staff.role === 'principal'
+              ? 'Principal'
+              : staff.role === 'admin'
+              ? 'Management Admin'
+              : `Teacher (${staff.subject})`,
+          assignedClass: staff.assignedClass,
+          subjects: [staff.subject],
+          qualifications: 'Recognized Faculty Degree, B.Ed.',
+        },
+        createdAt: new Date().toISOString(),
+      };
+      setUsers((prev) => [userMatch!, ...prev]);
+    }
+
+    setCurrentUser(userMatch);
+    showSimulatedPush(
+      'Logged In as Faculty',
+      `Active session switched to ${staff.name} (${staff.role} • ${staff.assignedClass || 'General'}).`,
+      'approval'
+    );
+  };
+
   const switchRole = (role: UserRole, specificUserId?: string) => {
     if (specificUserId) {
       const match = users.find((u) => u.id === specificUserId);
@@ -641,6 +800,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'live_classes');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'exam_reports');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'ptm_meetings');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'verified_staff');
     setUsers(INITIAL_USERS);
     setHomeworkList(INITIAL_HOMEWORK);
     setSubmissions(INITIAL_SUBMISSIONS);
@@ -649,6 +809,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setLiveClasses(INITIAL_LIVE_CLASSES);
     setExamReports(INITIAL_EXAM_REPORTS);
     setPtmMeetings(INITIAL_PTM_MEETINGS);
+    setVerifiedStaffList(INITIAL_VERIFIED_STAFF);
     setCurrentUser(INITIAL_USERS[2]); // Mrs. Meenakshi Sharma
     showSimulatedPush('System Reset', 'All demo data restored to initial Indian school state.', 'approval');
   };
@@ -689,6 +850,12 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         schedulePtm,
         updatePtmSlot,
         sendPtmReminder,
+        verifiedStaffList,
+        addVerifiedStaff,
+        updateVerifiedStaff,
+        deleteVerifiedStaff,
+        toggleStaffStatus,
+        loginAsStaffMember,
         activePushNotification,
         clearPushNotification,
         showSimulatedPush,

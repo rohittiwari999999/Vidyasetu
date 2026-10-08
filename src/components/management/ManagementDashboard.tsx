@@ -6,6 +6,7 @@ import { HomeworkManager } from './HomeworkManager';
 import { BroadcastCenter } from './BroadcastCenter';
 import { FeeManagementView } from './FeeManagementView';
 import { ExamMarksPtmManager } from './ExamMarksPtmManager';
+import { StaffAccessManagementView } from './StaffAccessManagementView';
 import {
   LayoutDashboard,
   UserCheck,
@@ -22,6 +23,10 @@ import {
   Clock,
   Sparkles,
   PhoneCall,
+  LogIn,
+  LogOut,
+  ChevronDown,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const ManagementDashboard: React.FC = () => {
@@ -32,13 +37,17 @@ export const ManagementDashboard: React.FC = () => {
     liveClasses,
     startLiveClass,
     setActiveLiveClassModal,
+    verifiedStaffList,
+    loginAsStaffMember,
+    setCurrentUser,
   } = useSchool();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'attendance' | 'homework' | 'broadcast' | 'fees' | 'live' | 'exams_ptm'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'attendance' | 'homework' | 'broadcast' | 'fees' | 'live' | 'exams_ptm' | 'staff_access'>('overview');
   const [liveSubject, setLiveSubject] = useState('Mathematics');
   const [liveTitle, setLiveTitle] = useState('Class 10-A: Real Numbers & Revision Drill');
   const [liveClassTarget, setLiveClassTarget] = useState('Class 10-A');
   const [showStartLiveModal, setShowStartLiveModal] = useState(false);
+  const [showFacultySwitchModal, setShowFacultySwitchModal] = useState(false);
 
   const isClassTeacher = currentUser.role === 'teacher';
   const isPrincipalOrManager = currentUser.role === 'principal' || currentUser.role === 'manager';
@@ -84,6 +93,15 @@ export const ManagementDashboard: React.FC = () => {
 
           {/* Quick Actions */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowFacultySwitchModal(true)}
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition"
+              title="Switch between Teacher, Class Teacher, Principal, or Admin accounts"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Switch Faculty Login</span>
+            </button>
+
             <button
               onClick={() => setShowStartLiveModal(true)}
               className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition"
@@ -205,6 +223,21 @@ export const ManagementDashboard: React.FC = () => {
           >
             <Award className="w-4 h-4 text-cyan-400" />
             <span>Exam Marks & PTM</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('staff_access')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition relative ${
+              activeTab === 'staff_access'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Staff Access (RBAC)</span>
+            <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-extrabold text-[10px] flex items-center justify-center">
+              {verifiedStaffList.length}
+            </span>
           </button>
         </div>
       </div>
@@ -444,6 +477,136 @@ export const ManagementDashboard: React.FC = () => {
       )}
 
       {activeTab === 'exams_ptm' && <ExamMarksPtmManager />}
+      {activeTab === 'staff_access' && <StaffAccessManagementView />}
+
+      {/* Switch Faculty / Teacher Login Modal */}
+      {showFacultySwitchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl text-slate-100 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+                  <LogIn className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Switch Faculty Member / Teacher Login</h3>
+                  <p className="text-xs text-slate-400">
+                    Log in as any authorized teacher or administrator to view their personalized class dashboard.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFacultySwitchModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Current Active User Banner */}
+            <div className="mt-4 p-3.5 bg-slate-950 border border-indigo-500/40 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src={currentUser.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"}
+                  alt={currentUser.name}
+                  className="w-10 h-10 rounded-xl object-cover border border-indigo-400"
+                />
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>{currentUser.name}</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="text-[11px] text-indigo-300">
+                    Current Active: {currentUser.role.toUpperCase()}
+                    {currentUser.teacherDetails?.assignedClass ? ` • ${currentUser.teacherDetails.assignedClass}` : ''}
+                  </div>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">
+                Logged In
+              </span>
+            </div>
+
+            {/* Faculty Directory Options */}
+            <div className="mt-4 space-y-2">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                Authorized Faculty Roster ({verifiedStaffList.length}):
+              </div>
+
+              <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                {verifiedStaffList.map((staff) => {
+                  const isCurrent =
+                    currentUser.email.toLowerCase() === staff.email.toLowerCase() ||
+                    currentUser.name.toLowerCase() === staff.name.toLowerCase();
+
+                  return (
+                    <button
+                      key={staff.id}
+                      onClick={() => {
+                        loginAsStaffMember(staff.id);
+                        setShowFacultySwitchModal(false);
+                      }}
+                      className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition ${
+                        isCurrent
+                          ? 'bg-indigo-600/20 border-indigo-500/60 text-white'
+                          : 'bg-slate-950/80 hover:bg-slate-800/90 border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-amber-500 flex items-center justify-center font-bold text-white text-xs shrink-0">
+                          {staff.name.replace(/^(Mr\.|Mrs\.|Dr\.|Er\.)\s*/i, '').charAt(0) || 'T'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-xs text-white truncate">{staff.name}</div>
+                          <div className="text-[10px] text-slate-400 capitalize truncate">
+                            {staff.role === 'classTeacher'
+                              ? `Class Teacher (${staff.assignedClass})`
+                              : staff.role === 'principal'
+                              ? 'Principal'
+                              : staff.role === 'admin'
+                              ? 'Management Admin'
+                              : `Subject Teacher (${staff.subject})`}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-bold px-2 py-1 rounded-lg shrink-0 ${
+                          isCurrent
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300'
+                        }`}
+                      >
+                        {isCurrent ? 'Active' : 'Switch'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+              <button
+                onClick={() => {
+                  setShowFacultySwitchModal(false);
+                  setActiveTab('staff_access');
+                }}
+                className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Manage / Pre-Verify More Staff</span>
+              </button>
+
+              <button
+                onClick={() => setShowFacultySwitchModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Start Live Session Modal */}
       {showStartLiveModal && (
