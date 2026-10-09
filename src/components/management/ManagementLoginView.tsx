@@ -7,20 +7,71 @@ import {
   Mail,
   Phone,
   Lock,
-  AlertCircle,
   ArrowRight,
   ShieldAlert,
   KeyRound,
   CheckCircle2,
+  Briefcase,
+  GraduationCap,
+  Users,
 } from 'lucide-react';
 
 interface ManagementLoginViewProps {
   onLoginSuccess?: () => void;
 }
 
+type StaffRoleKey = 'admin' | 'principal' | 'classTeacher' | 'generalTeacher';
+
+const ROLE_OPTIONS: { key: StaffRoleKey; label: string; badge: string; icon: any; color: string }[] = [
+  {
+    key: 'admin',
+    label: 'Management / Admin',
+    badge: 'Full Access',
+    icon: ShieldCheck,
+    color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+  },
+  {
+    key: 'principal',
+    label: 'Principal',
+    badge: 'Academic Head',
+    icon: GraduationCap,
+    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+  },
+  {
+    key: 'classTeacher',
+    label: 'Class Teacher',
+    badge: 'Class Incharge',
+    icon: Users,
+    color: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+  },
+  {
+    key: 'generalTeacher',
+    label: 'Subject Teacher',
+    badge: 'Faculty',
+    icon: Briefcase,
+    color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+  },
+];
+
+const getRoleDisplayName = (role: StaffRoleKey): string => {
+  switch (role) {
+    case 'admin':
+      return 'Management / Admin';
+    case 'principal':
+      return 'Principal';
+    case 'classTeacher':
+      return 'Class Teacher';
+    case 'generalTeacher':
+      return 'Subject Teacher';
+    default:
+      return role;
+  }
+};
+
 export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLoginSuccess }) => {
   const { verifiedStaffList, loginAsStaffMember, showSimulatedPush } = useSchool();
 
+  const [selectedRole, setSelectedRole] = useState<StaffRoleKey>('admin');
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
 
   // Email form
@@ -45,6 +96,11 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
       return;
     }
 
+    if (!inputPassword.trim()) {
+      setEmailError('Please enter your official security password or staff PIN.');
+      return;
+    }
+
     setIsVerifying(true);
 
     setTimeout(() => {
@@ -55,14 +111,23 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
 
       if (!match) {
         setEmailError(
-          `Access Denied: "${cleanEmail}" is not pre-registered in Staff Access (RBAC). Open registration is prohibited. The School Admin or Manager must add your credentials first.`
+          `Access Denied: "${cleanEmail}" is not pre-registered in Staff Access (RBAC). Open registration is strictly prohibited. The School Admin or Manager must add your credentials in Staff Access before you can authenticate.`
         );
         return;
       }
 
+      // Role Mismatch Check
+      if (match.role !== selectedRole) {
+        setEmailError(
+          `Role Access Denied: Your official account is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" to sign in.`
+        );
+        return;
+      }
+
+      // Active status check
       if (!match.isActive) {
         setEmailError(
-          `Account Suspended: The staff account for ${match.name} has been deactivated by the Administration.`
+          `Account Suspended: The staff account for ${match.name} has been deactivated by the Administration. Contact the School Manager.`
         );
         return;
       }
@@ -71,11 +136,11 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
       loginAsStaffMember(match.id);
       showSimulatedPush(
         'Staff Authentication Verified ✅',
-        `Logged in successfully as ${match.name} (${match.role}).`,
+        `Logged in successfully as ${match.name} (${getRoleDisplayName(match.role)}).`,
         'approval'
       );
       if (onLoginSuccess) onLoginSuccess();
-    }, 400);
+    }, 450);
   };
 
   const handleSendOtp = (e: React.FormEvent) => {
@@ -100,8 +165,15 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
       return;
     }
 
+    if (match.role !== selectedRole) {
+      setPhoneError(
+        `Role Mismatch: Registered as "${getRoleDisplayName(match.role)}", but you chose "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}".`
+      );
+      return;
+    }
+
     if (!match.isActive) {
-      setPhoneError(`Account Suspended: ${match.name}'s account is deactivated by the School Admin.`);
+      setPhoneError(`Account Suspended: ${match.name}'s account has been deactivated by the School Admin.`);
       return;
     }
 
@@ -125,6 +197,10 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
     );
 
     if (match) {
+      if (match.role !== selectedRole) {
+        setPhoneError(`Role Mismatch: This mobile is registered as ${getRoleDisplayName(match.role)}.`);
+        return;
+      }
       loginAsStaffMember(match.id);
       showSimulatedPush('OTP Verified ✅', `Welcome back, ${match.name}!`, 'approval');
       if (onLoginSuccess) onLoginSuccess();
@@ -132,7 +208,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 animate-fade-in p-2 sm:p-4">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in p-2 sm:p-4">
       {/* School Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
         <div className="flex items-center justify-center gap-3 mb-3">
@@ -146,26 +222,66 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
             <p className="text-xs text-indigo-300 font-semibold flex items-center gap-1.5">
               <span>CBSE Affiliation #2130894</span>
               <span>•</span>
-              <span>New Delhi Campus</span>
+              <span>Official Faculty Portal</span>
             </p>
           </div>
         </div>
 
-        <h2 className="text-lg font-bold text-slate-100 mt-4">
-          Official Faculty & Administration Portal
+        <h2 className="text-base sm:text-lg font-bold text-slate-100 mt-4">
+          Strict Role-Based Staff Authentication
         </h2>
-        <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
-          Strict Pre-Registration Enforced: Only staff and teachers pre-approved by the Admin/Manager can authenticate.
+        <p className="text-xs text-slate-400 max-w-lg mx-auto mt-1 leading-relaxed">
+          Open registration is strictly prohibited. Only faculty and administration pre-registered by the School Admin in Staff Access (RBAC) are authorized to log in.
         </p>
 
+        {/* Role Selector Cards */}
+        <div className="mt-6 text-left">
+          <label className="block text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-2 text-center">
+            Select Your Assigned Role:
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {ROLE_OPTIONS.map((opt) => {
+              const IconComp = opt.icon;
+              const isSelected = selectedRole === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRole(opt.key);
+                    setEmailError(null);
+                    setPhoneError(null);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-lg ring-2 ring-indigo-500/40'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <IconComp className={`w-4 h-4 ${isSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      {opt.badge}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white truncate">{opt.label}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Auth Method Selector */}
-        <div className="flex items-center justify-center gap-2 mt-6 max-w-sm mx-auto bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
+        <div className="flex items-center justify-center gap-2 mt-5 max-w-xs mx-auto bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
           <button
+            type="button"
             onClick={() => {
               setAuthMethod('email');
               setEmailError(null);
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
               authMethod === 'email'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -176,11 +292,12 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setAuthMethod('phone');
               setPhoneError(null);
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
               authMethod === 'phone'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -198,8 +315,11 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2 text-white font-bold text-base">
               <KeyRound className="w-5 h-5 text-indigo-400" />
-              <span>Sign In with Registered Staff Email</span>
+              <span>Log In as {getRoleDisplayName(selectedRole)}</span>
             </div>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Verified Accounts Only
+            </span>
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4 text-xs">
@@ -227,27 +347,16 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
-                  placeholder="Enter staff security password"
+                  required
+                  placeholder="Enter staff security password or PIN"
                   value={inputPassword}
-                  onChange={(e) => setInputPassword(e.target.value)}
+                  onChange={(e) => {
+                    setInputPassword(e.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-3.5 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
                 />
               </div>
-            </div>
-
-            {/* Quick Admin Credential Helper */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setInputEmail('sarita.abhinav.t9@gmail.com');
-                  setInputPassword('••••••••');
-                  setEmailError(null);
-                }}
-                className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold transition"
-              >
-                <span>⚡ Fill Super Admin Email (sarita.abhinav.t9@gmail.com)</span>
-              </button>
             </div>
 
             {emailError && (
@@ -263,7 +372,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
               className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" />
-              <span>{isVerifying ? 'Verifying Pre-Registration...' : 'Authenticate & Sign In'}</span>
+              <span>{isVerifying ? 'Verifying Pre-Registration in RBAC...' : `Authenticate as ${getRoleDisplayName(selectedRole)}`}</span>
             </button>
           </form>
         </div>
@@ -275,7 +384,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2 text-white font-bold text-base">
               <Phone className="w-5 h-5 text-emerald-400" />
-              <span>Sign In with Registered Mobile (OTP)</span>
+              <span>Sign In with Registered Mobile ({getRoleDisplayName(selectedRole)})</span>
             </div>
           </div>
 
@@ -291,7 +400,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
                     type="tel"
                     required
                     maxLength={10}
-                    placeholder="9670708847"
+                    placeholder="10-digit registered number"
                     value={inputPhone}
                     onChange={(e) => {
                       setInputPhone(e.target.value);
@@ -300,20 +409,6 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
                     className="w-full bg-slate-950 border border-slate-700 rounded-r-xl px-3.5 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
                   />
                 </div>
-              </div>
-
-              {/* Quick Admin Mobile Helper */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInputPhone('9670708847');
-                    setPhoneError(null);
-                  }}
-                  className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold transition"
-                >
-                  <span>⚡ Fill Super Admin Mobile (+91 9670708847)</span>
-                </button>
               </div>
 
               {phoneError && (

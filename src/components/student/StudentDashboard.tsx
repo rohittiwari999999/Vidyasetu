@@ -24,15 +24,17 @@ import {
 } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
-  const { currentUser, homeworkList, broadcasts, liveClasses, setActiveLiveClassModal } = useSchool();
+  const { currentUser, currentStudentUser, homeworkList, broadcasts, liveClasses, setActiveLiveClassModal } = useSchool();
   const [activeTab, setActiveTab] = useState<'overview' | 'homework' | 'live' | 'attendance' | 'notices' | 'fees' | 'report_card' | 'timetable'>('overview');
 
+  const activeStudent = (currentUser.role === 'student' || currentUser.role === 'parent') ? currentUser : currentStudentUser;
+
   // If status is pending, show the verification gate!
-  if (currentUser.status === 'pending') {
+  if (activeStudent.status === 'pending') {
     return <PendingApprovalGate />;
   }
 
-  const studentDetails = currentUser.studentDetails;
+  const studentDetails = activeStudent.studentDetails;
   const pendingHw = homeworkList.filter((h) => h.classId === studentDetails?.grade).slice(0, 2);
   const activeLive = liveClasses.find((l) => l.classId === studentDetails?.grade && l.status === 'live');
   const latestNotice = broadcasts[0];
@@ -45,8 +47,8 @@ export const StudentDashboard: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
-                src={currentUser.avatar || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"}
-                alt={currentUser.name}
+                src={activeStudent.avatar || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"}
+                alt={activeStudent.name}
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-400 shadow-xl"
               />
               <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-slate-950 p-1 rounded-full text-[10px] font-bold shadow">
@@ -57,7 +59,7 @@ export const StudentDashboard: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-extrabold text-white tracking-tight">
-                  {currentUser.name}
+                  {activeStudent.name}
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30">
                   VERIFIED STUDENT

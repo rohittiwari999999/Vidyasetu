@@ -43,6 +43,7 @@ class VerifiedStaffModel {
   final String name;
   final String email;
   final String phone;
+  final String password;
   final StaffRole role;
   final String assignedClass;
   final String schoolId;
@@ -55,6 +56,7 @@ class VerifiedStaffModel {
     required this.name,
     required this.email,
     required this.phone,
+    this.password = 'Admin@123',
     required this.role,
     this.assignedClass = '',
     required this.schoolId,
@@ -70,6 +72,7 @@ class VerifiedStaffModel {
       name: data['name'] ?? '',
       email: (data['email'] ?? '').toString().toLowerCase().trim(),
       phone: (data['phone'] ?? '').toString().trim(),
+      password: data['password'] ?? 'Admin@123',
       role: StaffRole.fromString(data['role']),
       assignedClass: data['assignedClass'] ?? '',
       schoolId: data['schoolId'] ?? 'vidyasetu_main',
@@ -84,6 +87,7 @@ class VerifiedStaffModel {
       'name': name,
       'email': email.toLowerCase().trim(),
       'phone': phone.trim(),
+      'password': password,
       'role': role.name,
       'assignedClass': assignedClass,
       'schoolId': schoolId,

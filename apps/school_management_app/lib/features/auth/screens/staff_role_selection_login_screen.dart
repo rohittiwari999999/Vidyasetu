@@ -387,7 +387,14 @@ class _RoleLoginModal extends ConsumerStatefulWidget {
 }
 
 class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
-  bool _isPhoneMode = false;
+  // Auth Modes: 0 = Official Email & PIN, 1 = Mobile OTP, 2 = Google Workspace
+  int _selectedAuthTab = 0;
+
+  // Email mode
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  // Phone mode
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
   String? _verificationId;
@@ -395,12 +402,49 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
 
   @override
   void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
     super.dispose();
   }
 
-  // --- GOOGLE AUTH FLOW ---
+  // --- 1. OFFICIAL EMAIL & PASSWORD / PIN FLOW ---
+  Future<void> _handleEmailSignIn() async {
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your official email address')),
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your staff password or PIN')),
+      );
+      return;
+    }
+
+    widget.onStartLoading('Authenticating with School Admin Database...');
+    final authService = ref.read(authServiceProvider);
+
+    try {
+      final verifiedStaff = await authService.signInStaffWithEmailAndPassword(
+        email: email,
+        password: password,
+        requestedRole: widget.role,
+      );
+
+      widget.onLoginSuccess(verifiedStaff);
+    } catch (e) {
+      widget.onLoginError(e.toString());
+    }
+  }
+
+  // --- 2. GOOGLE AUTH FLOW ---
   Future<void> _handleGoogleSignIn() async {
     widget.onStartLoading('Authenticating with Google...');
     final authService = ref.read(authServiceProvider);
@@ -416,11 +460,12 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
 
       widget.onLoginSuccess(verifiedStaff);
     } catch (e) {
+      await authService.signOut();
       widget.onLoginError(e.toString());
     }
   }
 
-  // --- PHONE AUTH FLOW ---
+  // --- 3. PHONE AUTH FLOW ---
   Future<void> _handleSendOtp() async {
     final phone = _phoneController.text.trim();
     if (phone.length < 10) {
@@ -459,6 +504,7 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
             );
             widget.onLoginSuccess(verifiedStaff);
           } catch (e) {
+            await authService.signOut();
             widget.onLoginError(e.toString());
           }
         },
@@ -493,6 +539,7 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
 
       widget.onLoginSuccess(verifiedStaff);
     } catch (e) {
+      await authService.signOut();
       widget.onLoginError(e.toString());
     }
   }
@@ -523,7 +570,7 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Pre-verified credentials required',
+                      'Pre-verified credentials required by School Admin',
                       style: TextStyle(color: Color(0xFF10B981), fontSize: 12),
                     ),
                   ],
@@ -535,129 +582,136 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
               ),
             ],
           ),
-          const Divider(color: Colors.white24, height: 24),
+          const Divider(color: Colors.white24, height: 20),
 
-          if (!_isPhoneMode) ...[
-            // Option 1: Continue with Google
-            ElevatedButton.icon(
-              onPressed: _handleGoogleSignIn,
-              icon: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: const Text('G', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
-              label: const Text('Continue with Google (Gmail)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF334155),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+          // Auth Mode Selector Tabs
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF334155)),
             ),
-            const SizedBox(height: 14),
-
-            // Option 2: Switch to Mobile Number
-            OutlinedButton.icon(
-              onPressed: () => setState(() => _isPhoneMode = true),
-              icon: const Icon(Icons.phone_android, size: 20),
-              label: const Text('Continue with Mobile Number (OTP)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFF475569)),
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Option 3: Select from Verified Staff Roster for this Role
-            const SizedBox(height: 6),
-            Text(
-              'Select Authorized Faculty Account (${widget.role.displayName}):',
-              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-
-            Builder(builder: (context) {
-              final authService = ref.read(authServiceProvider);
-              final allStaff = authService.getLocalStaffList();
-              final matchingStaff = allStaff.where((s) => s.role == widget.role).toList();
-
-              if (matchingStaff.isEmpty) {
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF334155)),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.shield_outlined, color: Color(0xFF94A3B8), size: 28),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No ${widget.role.displayName} Registered',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedAuthTab = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedAuthTab == 0 ? const Color(0xFF4F46E5) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'The Admin or Manager must pre-register your credentials in Staff Access (RBAC) before you can log in. Only authorized staff saved by management are allowed.',
+                      child: Text(
+                        'Email & PIN',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                        style: TextStyle(
+                          color: _selectedAuthTab == 0 ? Colors.white : Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                );
-              }
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedAuthTab = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedAuthTab == 1 ? const Color(0xFF4F46E5) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Mobile OTP',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _selectedAuthTab == 1 ? Colors.white : Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedAuthTab = 2),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedAuthTab == 2 ? const Color(0xFF4F46E5) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Google',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _selectedAuthTab == 2 ? Colors.white : Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
 
-              return Column(
-                children: matchingStaff.map((staff) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF334155)),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                      leading: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.2),
-                        child: Text(
-                          staff.name.isNotEmpty ? staff.name[0] : 'S',
-                          style: const TextStyle(color: Color(0xFFA5B4FC), fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      title: Text(
-                        staff.name,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      subtitle: Text(
-                        staff.assignedClass.isNotEmpty
-                            ? 'Class: ${staff.assignedClass} • ${staff.email}'
-                            : staff.email,
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: () => widget.onLoginSuccess(staff),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4F46E5),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          minimumSize: const Size(60, 32),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Login', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              );
-            }),
-          ] else ...[
-            // Phone Auth View
+          // TAB 0: OFFICIAL EMAIL & PASSWORD / PIN
+          if (_selectedAuthTab == 0) ...[
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Official Registered Email',
+                hintText: 'e.g. name@school.edu.in',
+                prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: const Color(0xFF0F172A),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Security Password / Staff PIN',
+                hintText: 'Enter your staff password',
+                prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: const Color(0xFF0F172A),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _handleEmailSignIn,
+              icon: const Icon(Icons.login),
+              label: Text(
+                'Authenticate as ${widget.role.displayName}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F46E5),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ]
+
+          // TAB 1: MOBILE OTP AUTH
+          else if (_selectedAuthTab == 1) ...[
             if (!_otpSent) ...[
               TextField(
                 controller: _phoneController,
@@ -681,6 +735,7 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
                 label: const Text('Send Verification OTP'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -708,21 +763,60 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
                 onPressed: _handleVerifyOtp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('Verify OTP & Enter App', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => setState(() => _otpSent = false),
+                child: const Text('Change Number', style: TextStyle(color: Colors.grey)),
+              ),
             ],
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => setState(() {
-                _isPhoneMode = false;
-                _otpSent = false;
-              }),
-              child: const Text('← Back to Login Options', style: TextStyle(color: Colors.grey)),
+          ]
+
+          // TAB 2: GOOGLE SIGN IN
+          else ...[
+            const Text(
+              'Sign in using your pre-verified Google account. Only emails saved by the School Admin are allowed access.',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _handleGoogleSignIn,
+              icon: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: const Text('G', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+              label: Text(
+                'Continue with Google (${widget.role.displayName})',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF334155),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ],
+
+          const SizedBox(height: 14),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.shield_outlined, color: Color(0xFF94A3B8), size: 14),
+              SizedBox(width: 6),
+              Text(
+                'Strict RBAC: Open signup prohibited for staff.',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -11,10 +11,22 @@ import '../features/homework/screens/create_homework_screen.dart';
 import '../features/broadcast/screens/compose_broadcast_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authUser = ref.watch(authStateChangesProvider).value;
+  final currentStaff = ref.watch(currentVerifiedStaffProvider);
 
   return GoRouter(
-    initialLocation: authUser != null ? '/dashboard' : '/login',
+    initialLocation: currentStaff != null ? '/dashboard' : '/login',
+    redirect: (BuildContext context, GoRouterState state) {
+      final isLogin = state.matchedLocation == '/login';
+      // Strict Pre-Verification Enforced: If not verified staff, lock to /login
+      if (currentStaff == null) {
+        return isLogin ? null : '/login';
+      }
+      // If already verified and on login, bypass to dashboard
+      if (isLogin && currentStaff != null) {
+        return '/dashboard';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/login',

@@ -20,6 +20,7 @@ import {
   School,
   Lock,
   Sparkles,
+  KeyRound,
 } from 'lucide-react';
 
 export const StaffAccessManagementView: React.FC = () => {
@@ -37,11 +38,13 @@ export const StaffAccessManagementView: React.FC = () => {
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<'all' | 'classTeacher' | 'generalTeacher' | 'principal' | 'admin'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<VerifiedStaffItem | null>(null);
+  const [staffToDelete, setStaffToDelete] = useState<VerifiedStaffItem | null>(null);
 
   // New Staff Form State
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('Staff@123');
   const [newRole, setNewRole] = useState<'classTeacher' | 'generalTeacher' | 'principal' | 'admin'>('classTeacher');
   const [newAssignedClass, setNewAssignedClass] = useState('Class 10-A');
   const [newSubject, setNewSubject] = useState('Mathematics');
@@ -56,6 +59,7 @@ export const StaffAccessManagementView: React.FC = () => {
       name: newName.trim(),
       email: newEmail.trim().toLowerCase(),
       phone: newPhone.trim(),
+      password: newPassword.trim() || 'Staff@123',
       role: newRole,
       assignedClass: newRole === 'classTeacher' ? newAssignedClass : newRole === 'admin' ? 'All Wings' : newRole === 'principal' ? 'All Classes' : '',
       subject: newSubject.trim() || 'General',
@@ -67,6 +71,7 @@ export const StaffAccessManagementView: React.FC = () => {
     setNewName('');
     setNewEmail('');
     setNewPhone('');
+    setNewPassword('Staff@123');
     setNewSubject('Mathematics');
     setNewEmployeeId('');
     setShowAddModal(false);
@@ -81,6 +86,7 @@ export const StaffAccessManagementView: React.FC = () => {
       name: editingStaff.name,
       email: editingStaff.email,
       phone: editingStaff.phone,
+      password: editingStaff.password,
       role: editingStaff.role,
       assignedClass: editingStaff.role === 'classTeacher' ? editingStaff.assignedClass : '',
       subject: editingStaff.subject,
@@ -332,20 +338,16 @@ export const StaffAccessManagementView: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-between gap-2 pt-4 mt-3 border-t border-slate-800">
-                <button
-                  onClick={() => loginAsStaffMember(staff.id)}
-                  disabled={isCurrentLoggedIn || !staff.isActive}
-                  className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition ${
-                    isCurrentLoggedIn
-                      ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 cursor-default'
-                      : staff.isActive
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow'
-                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                <div
+                  className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border ${
+                    staff.isActive
+                      ? 'bg-emerald-950/30 text-emerald-300 border-emerald-500/30'
+                      : 'bg-rose-950/30 text-rose-300 border-rose-500/30'
                   }`}
                 >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>{isCurrentLoggedIn ? 'Active Session' : 'Login as Faculty'}</span>
-                </button>
+                  <ShieldCheck className={`w-3.5 h-3.5 ${staff.isActive ? 'text-emerald-400' : 'text-rose-400'}`} />
+                  <span>{staff.isActive ? 'Authorized Credential' : 'Access Revoked'}</span>
+                </div>
 
                 <button
                   onClick={() => setEditingStaff(staff)}

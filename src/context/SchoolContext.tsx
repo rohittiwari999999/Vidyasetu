@@ -40,6 +40,8 @@ export interface PushNotificationEvent {
 interface SchoolContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
+  currentStudentUser: UserProfile;
+  setCurrentStudentUser: (user: UserProfile) => void;
   users: UserProfile[];
   viewMode: AppViewMode;
   setViewMode: (mode: AppViewMode) => void;
@@ -104,6 +106,9 @@ interface SchoolContextType {
   deleteVerifiedStaff: (staffId: string) => void;
   toggleStaffStatus: (staffId: string) => void;
   loginAsStaffMember: (staffId: string) => void;
+  isStaffAuthenticated: boolean;
+  setIsStaffAuthenticated: (val: boolean) => void;
+  logoutStaff: () => void;
 
   // Push Notifications simulation
   activePushNotification: PushNotificationEvent | null;
@@ -117,14 +122,47 @@ interface SchoolContextType {
 
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
-const STORAGE_KEY_PREFIX = 'vidyasetu_live_v2_';
+const STORAGE_KEY_PREFIX = 'vidyasetu_v5_';
+
+const DEMO_STAFF_EMAILS = [
+  'principal.dma@vidyasetu.in',
+  'meenakshi.sharma@vidyasetu.in',
+  'rajesh.khanna@vidyasetu.in',
+  'sunita.verma@vidyasetu.in',
+  'shalini.gupta@vidyasetu.in',
+];
+
+const sanitizeStaffList = (list: VerifiedStaffItem[]): VerifiedStaffItem[] => {
+  const filtered = list.filter((s) => {
+    const cleanEmail = s.email.toLowerCase().trim();
+    if (DEMO_STAFF_EMAILS.includes(cleanEmail)) return false;
+    if (s.name.includes('Sunita Verma') || s.name.includes('Meenakshi Sharma') || s.name.includes('Rajesh Khanna')) return false;
+    return true;
+  });
+  // Always ensure root Super Admin is present
+  const hasRoot = filtered.some((s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com');
+  if (!hasRoot) {
+    return [...INITIAL_VERIFIED_STAFF, ...filtered];
+  }
+  return filtered;
+};
+
+const sanitizeUserList = (list: UserProfile[]): UserProfile[] => {
+  return list.filter((u) => {
+    const cleanEmail = u.email.toLowerCase().trim();
+    if (DEMO_STAFF_EMAILS.includes(cleanEmail)) return false;
+    if (u.name.includes('Sunita Verma') || u.name.includes('Meenakshi Sharma') || u.name.includes('Rajesh Khanna')) return false;
+    return true;
+  });
+};
 
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserProfile[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'users');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return sanitizeUserList(parsed);
       } catch (_) {
         return INITIAL_USERS;
       }
@@ -139,7 +177,11 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (match) return match;
     }
     // Default to Super Admin
-    return users.find((u) => u.email === 'sarita.abhinav.t9@gmail.com') || users[0];
+    return users.find((u) => u.email === 'sarita.abhinav.t9@gmail.com') || INITIAL_USERS[0];
+  });
+
+  const [currentStudentUser, setCurrentStudentUser] = useState<UserProfile>(() => {
+    return users.find((u) => u.role === 'student' && u.status === 'approved') || INITIAL_USERS[1];
   });
 
   const [viewMode, setViewMode] = useState<AppViewMode>('dual');
@@ -184,13 +226,23 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'verified_staff');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return sanitizeStaffList(parsed);
       } catch (_) {
         return INITIAL_VERIFIED_STAFF;
       }
     }
     return INITIAL_VERIFIED_STAFF;
   });
+
+  const [isStaffAuthenticated, setIsStaffAuthenticated] = useState<boolean>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'staff_authenticated');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'staff_authenticated', String(isStaffAuthenticated));
+  }, [isStaffAuthenticated]);
 
   // Daily attendance state for Class 10-A
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'present' | 'absent' | 'late' | 'leave'>>(() => {
@@ -762,13 +814,16 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return updated;
     });
 
-    // If deleting the active user, fallback to Super Admin
+    // If deleting the currently logged-in user, immediately log out and reset
     if (currentUser.id === 'user-' + staffId || (toRemove && currentUser.email.toLowerCase() === toRemove.email.toLowerCase())) {
+      setIsStaffAuthenticated(false);
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'staff_authenticated', 'false');
+      localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user_id');
       const rootAdmin = users.find((u) => u.email === 'sarita.abhinav.t9@gmail.com') || INITIAL_USERS[0];
       setCurrentUser(rootAdmin);
     }
 
-    showSimulatedPush('Staff Removed ❌', `Staff record deleted permanently from directory.`, 'approval');
+    showSimulatedPush('Staff Access Revoked ❌', `Staff record deleted permanently from directory.`, 'approval');
   };
 
   const toggleStaffStatus = (staffId: string) => {
@@ -822,11 +877,23 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     setCurrentUser(userMatch);
+    setIsStaffAuthenticated(true);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'staff_authenticated', 'true');
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user_id', userMatch.id);
     showSimulatedPush(
       'Logged In as Faculty',
       `Active session switched to ${staff.name} (${staff.role} • ${staff.assignedClass || 'General'}).`,
       'approval'
     );
+  };
+
+  const logoutStaff = () => {
+    setIsStaffAuthenticated(false);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'staff_authenticated', 'false');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user_id');
+    const rootAdmin = users.find((u) => u.email === 'sarita.abhinav.t9@gmail.com') || INITIAL_USERS[0];
+    setCurrentUser(rootAdmin);
+    showSimulatedPush('Logged Out', 'Successfully logged out of faculty portal.', 'broadcast');
   };
 
   const switchRole = (role: UserRole, specificUserId?: string) => {
@@ -872,6 +939,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         currentUser,
         setCurrentUser,
+        currentStudentUser,
+        setCurrentStudentUser,
         users,
         viewMode,
         setViewMode,
@@ -909,6 +978,9 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteVerifiedStaff,
         toggleStaffStatus,
         loginAsStaffMember,
+        isStaffAuthenticated,
+        setIsStaffAuthenticated,
+        logoutStaff,
         activePushNotification,
         clearPushNotification,
         showSimulatedPush,

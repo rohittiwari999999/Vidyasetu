@@ -18,6 +18,7 @@ class _StaffAccessManagementScreenState
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
+    final passwordController = TextEditingController(text: 'Staff@123');
     final classController = TextEditingController(text: 'Class 10-A');
     StaffRole selectedRole = StaffRole.classTeacher;
 
@@ -62,6 +63,12 @@ class _StaffAccessManagementScreenState
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(color: Colors.white),
                   decoration: _inputDeco('Mobile Number (Phone OTP)', 'e.g. 9876543210', Icons.phone),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDeco('Staff Password / PIN', 'e.g. Staff@123', Icons.lock_outline),
                 ),
                 const SizedBox(height: 16),
                 const Text('Assign Strict Role:', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
@@ -113,6 +120,7 @@ class _StaffAccessManagementScreenState
                 final name = nameController.text.trim();
                 final email = emailController.text.trim();
                 final phone = phoneController.text.trim();
+                final pass = passwordController.text.trim().isNotEmpty ? passwordController.text.trim() : 'Staff@123';
 
                 if (name.isEmpty || (email.isEmpty && phone.isEmpty)) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +134,7 @@ class _StaffAccessManagementScreenState
                   name: name,
                   email: email,
                   phone: phone,
+                  password: pass,
                   role: selectedRole,
                   assignedClass: selectedRole == StaffRole.classTeacher ? classController.text.trim() : '',
                   schoolId: _schoolId,

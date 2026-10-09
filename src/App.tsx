@@ -12,15 +12,9 @@ import { generateAndDownloadFlutterProjectZip } from './services/zipExporter';
 import {
   Smartphone,
   School,
-  User,
-  RotateCcw,
-  Sparkles,
   UserPlus,
   Code2,
-  ChevronDown,
-  Layers,
   GraduationCap,
-  ShieldCheck,
   Download,
   Loader2,
 } from 'lucide-react';
@@ -36,7 +30,6 @@ const AppContent: React.FC = () => {
     resetToDefaults,
   } = useSchool();
 
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showPhoneTestModal, setShowPhoneTestModal] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
@@ -165,75 +158,17 @@ const AppContent: React.FC = () => {
               <span>Student Signup</span>
             </button>
 
-            {/* Quick Role Impersonate Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 transition"
-              >
-                <img
-                  src={currentUser.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80"}
-                  alt={currentUser.name}
-                  className="w-6 h-6 rounded-full object-cover border border-slate-600"
-                />
-                <span className="hidden sm:inline max-w-[120px] truncate">{currentUser.name}</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 uppercase">
-                  {currentUser.role}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-
-              {showRoleDropdown && (
-                <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-50 animate-fade-in text-xs">
-                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                    Switch Active Persona:
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto space-y-1 py-1">
-                    {users.map((u) => (
-                      <button
-                        key={u.id}
-                        onClick={() => {
-                          setCurrentUser(u);
-                          setShowRoleDropdown(false);
-                        }}
-                        className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition ${
-                          currentUser.id === u.id ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800 text-slate-300'
-                        }`}
-                      >
-                        <img
-                          src={u.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80"}
-                          alt={u.name}
-                          className="w-7 h-7 rounded-full object-cover border border-slate-700 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-xs truncate">{u.name}</div>
-                          <div className="text-[10px] opacity-75 capitalize">
-                            {u.role} {u.teacherDetails?.assignedClass ? `(${u.teacherDetails.assignedClass})` : u.studentDetails?.grade ? `(${u.studentDetails.grade})` : ''}
-                          </div>
-                        </div>
-                        {u.status === 'pending' && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            Pending
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-800 flex justify-between items-center px-2">
-                    <button
-                      onClick={() => {
-                        resetToDefaults();
-                        setShowRoleDropdown(false);
-                      }}
-                      className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1"
-                    >
-                      <RotateCcw className="w-3 h-3" /> Reset Demo
-                    </button>
-                  </div>
-                </div>
-              )}
+            {/* Active User Identity */}
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200">
+              <img
+                src={currentUser.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80"}
+                alt={currentUser.name}
+                className="w-6 h-6 rounded-full object-cover border border-slate-600"
+              />
+              <span className="hidden sm:inline max-w-[120px] truncate">{currentUser.name}</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 uppercase">
+                {currentUser.role}
+              </span>
             </div>
           </div>
         </div>
