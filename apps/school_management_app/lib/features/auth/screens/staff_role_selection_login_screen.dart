@@ -584,16 +584,29 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
               final matchingStaff = allStaff.where((s) => s.role == widget.role).toList();
 
               if (matchingStaff.isEmpty) {
-                matchingStaff.add(
-                  VerifiedStaffModel(
-                    id: 'staff-custom-fallback',
-                    name: widget.role == StaffRole.classTeacher ? 'Mrs. Meenakshi Sharma' : 'Faculty Member',
-                    email: 'faculty@vidyasetu.edu.in',
-                    phone: '9870000000',
-                    role: widget.role,
-                    assignedClass: widget.role == StaffRole.classTeacher ? 'Class 10-A' : '',
-                    schoolId: 'vidyasetu_main',
-                    createdAt: DateTime.now(),
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.shield_outlined, color: Color(0xFF94A3B8), size: 28),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No ${widget.role.displayName} Registered',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'The Admin or Manager must pre-register your credentials in Staff Access (RBAC) before you can log in. Only authorized staff saved by management are allowed.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                      ),
+                    ],
                   ),
                 );
               }

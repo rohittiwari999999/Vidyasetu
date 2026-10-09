@@ -263,61 +263,6 @@ class _StaffAccessManagementScreenState
     );
   }
 
-  Future<void> _seedDefaultStaff() async {
-    final authService = ref.read(authServiceProvider);
-    
-    // Admin
-    await authService.addVerifiedStaff(VerifiedStaffModel(
-      id: '',
-      name: 'Abhinav Tiwari (Super Admin)',
-      email: 'sarita.abhinav.t9@gmail.com',
-      phone: '+919670708847',
-      role: StaffRole.admin,
-      schoolId: _schoolId,
-      createdAt: DateTime.now(),
-    ));
-
-    // Principal
-    await authService.addVerifiedStaff(VerifiedStaffModel(
-      id: '',
-      name: 'Dr. R.K. Mishra (Principal)',
-      email: 'principal@vidyasetu.in',
-      phone: '9876500001',
-      role: StaffRole.principal,
-      schoolId: _schoolId,
-      createdAt: DateTime.now(),
-    ));
-
-    // Class Teacher
-    await authService.addVerifiedStaff(VerifiedStaffModel(
-      id: '',
-      name: 'Mrs. Sunita Verma',
-      email: 'sunita.verma@vidyasetu.in',
-      phone: '9876500002',
-      role: StaffRole.classTeacher,
-      assignedClass: 'Class 10-A',
-      schoolId: _schoolId,
-      createdAt: DateTime.now(),
-    ));
-
-    // General Teacher
-    await authService.addVerifiedStaff(VerifiedStaffModel(
-      id: '',
-      name: 'Mr. Rajesh Pandey (Physics)',
-      email: 'rajesh.pandey@vidyasetu.in',
-      phone: '9876500003',
-      role: StaffRole.generalTeacher,
-      schoolId: _schoolId,
-      createdAt: DateTime.now(),
-    ));
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seeded 4 default verified staff roles!'), backgroundColor: Colors.teal),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
@@ -367,15 +312,11 @@ class _StaffAccessManagementScreenState
                     ElevatedButton.icon(
                       onPressed: () => _showAddStaffDialog(context),
                       icon: const Icon(Icons.person_add),
-                      label: const Text('Add First Staff Member'),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: _seedDefaultStaff,
-                      icon: const Icon(Icons.auto_fix_high, size: 18),
-                      label: const Text('Seed 4 Demo Roles (Admin, Principal, Teacher)'),
-                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF6EE7B7)),
+                      label: const Text('Add Staff Member'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
                     ),
                   ],
                 ),
