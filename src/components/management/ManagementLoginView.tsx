@@ -136,7 +136,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
       // Strict Password / Staff PIN Verification
       const enteredPassword = inputPassword.trim();
       const expectedPassword = match.password || 'Staff@123';
-      const isRootAdmin = cleanEmail === 'sarita.abhinav.t9@gmail.com';
+      const isRootAdmin = cleanEmail === 'sarita.abhinav.t9@gmail.com' || cleanEmail === 'rohit.tiwari777@gmail.com';
       const isPasswordValid =
         enteredPassword === expectedPassword ||
         (isRootAdmin && (enteredPassword === 'Admin@123' || enteredPassword === 'admin123' || enteredPassword === '9670708847'));

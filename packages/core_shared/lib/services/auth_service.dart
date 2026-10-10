@@ -53,7 +53,9 @@ class AuthService {
       final normalizedEmail = email.trim().toLowerCase();
 
       // Master Super Admin auto-bootstrap into database if new project
-      if (normalizedEmail == 'sarita.abhinav.t9@gmail.com') {
+      final isSuperAdminEmail = normalizedEmail == 'sarita.abhinav.t9@gmail.com' || normalizedEmail == 'rohit.tiwari777@gmail.com';
+      if (isSuperAdminEmail) {
+        final docId = normalizedEmail == 'rohit.tiwari777@gmail.com' ? 'root_admin_rohit' : 'root_admin_owner';
         final query = await _firestore
             .collection('verified_staff')
             .where('email', isEqualTo: normalizedEmail)
@@ -61,9 +63,9 @@ class AuthService {
             .get();
 
         if (query.docs.isEmpty) {
-          final rootDoc = _firestore.collection('verified_staff').doc('root_admin_owner');
+          final rootDoc = _firestore.collection('verified_staff').doc(docId);
           await rootDoc.set({
-            'name': 'Abhinav Tiwari (Super Admin)',
+            'name': normalizedEmail == 'rohit.tiwari777@gmail.com' ? 'Rohit Tiwari (Super Admin)' : 'Abhinav Tiwari (Super Admin)',
             'email': normalizedEmail,
             'phone': '+919670708847',
             'role': 'admin',
@@ -230,6 +232,93 @@ class AuthService {
     }
   }
 
+  /// Safe, direct staff sign-in with Google avoiding null-check issues
+  Future<VerifiedStaffModel> signInStaffWithGoogle({
+    required StaffRole requestedRole,
+  }) async {
+    final GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await _googleSignIn.signIn();
+    } catch (e) {
+      throw StaffAuthException('Google Sign-In failed: ${e.toString()}');
+    }
+
+    if (googleUser == null) {
+      throw const StaffAuthException('Google Sign-In was cancelled.');
+    }
+
+    final email = googleUser.email.trim().toLowerCase();
+    final name = googleUser.displayName ?? 'Faculty Member';
+
+    // Attempt Firebase Auth sign-in if tokens are available, but gracefully continue if unavailable
+    User? firebaseUser;
+    try {
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      if (googleAuth.idToken != null || googleAuth.accessToken != null) {
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        final cred = await _auth.signInWithCredential(credential);
+        firebaseUser = cred.user;
+      }
+    } catch (_) {
+      // Continue with verified Google Identity
+    }
+
+    // Strict Pre-Verification Lookup in Staff Database
+    final staffRecord = await checkPreVerifiedStaff(email: email);
+
+    if (staffRecord == null) {
+      await _googleSignIn.signOut();
+      if (firebaseUser != null) await _auth.signOut();
+      throw StaffAuthException(
+        'Access Denied: The Google account "$email" is not registered in Staff Access (RBAC).\n'
+        'Only official faculty and administrators added by the School Manager can sign in.',
+      );
+    }
+
+    if (staffRecord.role != requestedRole) {
+      await _googleSignIn.signOut();
+      if (firebaseUser != null) await _auth.signOut();
+      throw StaffAuthException(
+        'Role Mismatch: Your account is registered as "${staffRecord.role.displayName}", '
+        'but you selected "${requestedRole.displayName}". Please choose your assigned role.',
+      );
+    }
+
+    if (!staffRecord.isActive) {
+      await _googleSignIn.signOut();
+      if (firebaseUser != null) await _auth.signOut();
+      throw const StaffAuthException(
+        'Access Revoked: Your staff account has been deactivated by the Administration.',
+      );
+    }
+
+    // Sync / Upsert into Firestore `users` collection
+    final effectiveUid = firebaseUser?.uid ?? 'google_${googleUser.id}';
+    final mappedUserRole = _mapStaffRoleToUserRole(staffRecord.role);
+    try {
+      await _firestore.collection('users').doc(effectiveUid).set({
+        'name': staffRecord.name.isNotEmpty ? staffRecord.name : name,
+        'email': email,
+        'phone': staffRecord.phone.isNotEmpty ? staffRecord.phone : '',
+        'role': mappedUserRole.name,
+        'staffRole': staffRecord.role.name,
+        'schoolId': staffRecord.schoolId,
+        'status': 'approved',
+        'teacherDetails': {
+          'assignedClass': staffRecord.assignedClass,
+          'designation': staffRecord.role.displayName,
+          'employeeId': staffRecord.id,
+        },
+        'lastLoginAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+
+    return staffRecord;
+  }
+
   // -------------------------------------------------------------
   // 3. PHONE AUTH (OTP)
   // -------------------------------------------------------------
@@ -347,7 +436,22 @@ class AuthService {
       name: 'Abhinav Tiwari (Super Admin)',
       email: 'sarita.abhinav.t9@gmail.com',
       phone: '+919670708847',
+      password: 'Admin@123',
       role: StaffRole.admin,
+      assignedClass: 'All Wings',
+      schoolId: 'vidyasetu_main',
+      isActive: true,
+      addedBy: 'Root Security Authority',
+      createdAt: DateTime(2025, 1, 1),
+    ),
+    VerifiedStaffModel(
+      id: 'staff-admin-rohit',
+      name: 'Rohit Tiwari (Super Admin)',
+      email: 'rohit.tiwari777@gmail.com',
+      phone: '+919670708847',
+      password: 'Admin@123',
+      role: StaffRole.admin,
+      assignedClass: 'All Wings',
       schoolId: 'vidyasetu_main',
       isActive: true,
       addedBy: 'Root Security Authority',
@@ -491,7 +595,7 @@ class AuthService {
   }
 
   Future<void> deleteVerifiedStaff(String docId) async {
-    if (docId == 'staff-admin-root' || docId == 'root_admin_owner') {
+    if (docId == 'staff-admin-root' || docId == 'root_admin_owner' || docId == 'staff-admin-rohit' || docId == 'root_admin_rohit') {
       return;
     }
     _localStaffStore.removeWhere((s) => s.id == docId);

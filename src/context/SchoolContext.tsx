@@ -140,7 +140,9 @@ const sanitizeStaffList = (list: VerifiedStaffItem[]): VerifiedStaffItem[] => {
     return true;
   });
   // Always ensure root Super Admin is present
-  const hasRoot = filtered.some((s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com');
+  const hasRoot = filtered.some(
+    (s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com' || s.email.toLowerCase() === 'rohit.tiwari777@gmail.com'
+  );
   if (!hasRoot) {
     return [...INITIAL_VERIFIED_STAFF, ...filtered];
   }

@@ -446,22 +446,18 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
 
   // --- 2. GOOGLE AUTH FLOW ---
   Future<void> _handleGoogleSignIn() async {
-    widget.onStartLoading('Authenticating with Google...');
+    widget.onStartLoading('Authenticating with Google Account...');
     final authService = ref.read(authServiceProvider);
 
     try {
-      final cred = await authService.signInWithGoogle();
-      widget.onStartLoading('Verifying role with School Admin Database...');
-      
-      final verifiedStaff = await authService.verifyAndAuthorizeStaff(
-        user: cred.user!,
+      final verifiedStaff = await authService.signInStaffWithGoogle(
         requestedRole: widget.role,
       );
 
       widget.onLoginSuccess(verifiedStaff);
     } catch (e) {
-      await authService.signOut();
-      widget.onLoginError(e.toString());
+      final cleanMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('StaffAuthException: ', '');
+      widget.onLoginError(cleanMsg);
     }
   }
 
@@ -498,19 +494,25 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
           widget.onStartLoading('Auto-verifying OTP and checking Admin pre-approval...');
           try {
             final cred = await FirebaseAuth.instance.signInWithCredential(credential);
+            final user = cred.user;
+            if (user == null) {
+              throw const StaffAuthException('Could not resolve authenticated user from SMS verification.');
+            }
             final verifiedStaff = await authService.verifyAndAuthorizeStaff(
-              user: cred.user!,
+              user: user,
               requestedRole: widget.role,
             );
             widget.onLoginSuccess(verifiedStaff);
           } catch (e) {
             await authService.signOut();
-            widget.onLoginError(e.toString());
+            final cleanMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('StaffAuthException: ', '');
+            widget.onLoginError(cleanMsg);
           }
         },
       );
     } catch (e) {
-      widget.onLoginError(e.toString());
+      final cleanMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('StaffAuthException: ', '');
+      widget.onLoginError(cleanMsg);
     }
   }
 
@@ -532,15 +534,21 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
         smsCode: smsCode,
       );
 
+      final user = cred.user;
+      if (user == null) {
+        throw const StaffAuthException('Could not resolve authenticated user from OTP code.');
+      }
+
       final verifiedStaff = await authService.verifyAndAuthorizeStaff(
-        user: cred.user!,
+        user: user,
         requestedRole: widget.role,
       );
 
       widget.onLoginSuccess(verifiedStaff);
     } catch (e) {
       await authService.signOut();
-      widget.onLoginError(e.toString());
+      final cleanMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('StaffAuthException: ', '');
+      widget.onLoginError(cleanMsg);
     }
   }
 
