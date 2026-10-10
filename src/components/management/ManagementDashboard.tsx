@@ -19,6 +19,8 @@ import {
   Users,
   Award,
   Shield,
+  ShieldCheck,
+  Sparkles,
   Building2,
   TrendingUp,
   Clock,
@@ -35,6 +37,7 @@ export const ManagementDashboard: React.FC = () => {
     setActiveLiveClassModal,
     isStaffAuthenticated,
     logoutStaff,
+    verifiedStaffList,
   } = useSchool();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'attendance' | 'homework' | 'broadcast' | 'fees' | 'live' | 'exams_ptm' | 'staff_access'>('overview');
@@ -297,9 +300,17 @@ export const ManagementDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-white text-base flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-400" />
-                  <span>Class Teacher Command: Class 10-A</span>
+                  <span>
+                    {currentUser.role === 'teacher'
+                      ? `Class Teacher Command: ${currentUser.teacherDetails?.assignedClass || 'Assigned Class'}`
+                      : currentUser.role === 'principal'
+                      ? 'Academic Head Command: All Classes'
+                      : 'Institution Management Overview'}
+                  </span>
                 </h3>
-                <span className="text-xs text-indigo-400 font-semibold">Teacher: Mrs. Meenakshi Sharma</span>
+                <span className="text-xs text-indigo-400 font-semibold">
+                  {currentUser.role === 'teacher' ? 'Faculty' : currentUser.role === 'principal' ? 'Principal' : 'Admin'}: {currentUser.name}
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

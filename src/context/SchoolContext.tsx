@@ -799,6 +799,12 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const deleteVerifiedStaff = (staffId: string) => {
+    // Root Super Admin protection
+    if (staffId === 'staff-admin-root') {
+      showSimulatedPush('Action Denied ⚠️', 'The primary Root Institution Administrator cannot be deleted.', 'approval');
+      return;
+    }
+
     const toRemove = verifiedStaffList.find((s) => s.id === staffId);
     setVerifiedStaffList((prev) => {
       const updated = prev.filter((s) => s.id !== staffId);
@@ -912,6 +918,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const resetToDefaults = () => {
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user_id');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'staff_authenticated');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'users');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'homework');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'submissions');
@@ -921,6 +928,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'exam_reports');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'ptm_meetings');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'verified_staff');
+    setIsStaffAuthenticated(false);
     setUsers(INITIAL_USERS);
     setHomeworkList(INITIAL_HOMEWORK);
     setSubmissions(INITIAL_SUBMISSIONS);

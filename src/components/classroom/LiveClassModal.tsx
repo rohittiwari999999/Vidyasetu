@@ -22,7 +22,7 @@ export const LiveClassModal: React.FC = () => {
   const [handRaised, setHandRaised] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ sender: string; text: string; time: string }>>([
-    { sender: 'Mrs. Meenakshi Sharma', text: 'Good morning students, please open NCERT page 48 for Theorem 2.3.', time: '10:02 AM' },
+    { sender: activeLiveClassModal?.teacherName || 'Faculty Host', text: 'Good morning students, please open NCERT page 48 for Theorem 2.3.', time: '10:02 AM' },
     { sender: 'Aarav Sharma', text: 'Good morning ma\'am! Notebook and NCERT open.', time: '10:03 AM' },
     { sender: 'Ananya Verma', text: 'Ma\'am audio is crystal clear.', time: '10:04 AM' },
   ]);
@@ -96,7 +96,7 @@ export const LiveClassModal: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
               <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Mrs. Meenakshi Sharma (Host • Speaking)</span>
+                <span>{activeLiveClassModal.teacherName} (Host • Speaking)</span>
               </div>
               {screenSharing && (
                 <div className="absolute top-3 right-3 bg-indigo-600/90 text-white text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium shadow-md">

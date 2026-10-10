@@ -323,6 +323,10 @@ export const StaffAccessManagementView: React.FC = () => {
                     <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>{staff.phone}</span>
                   </div>
+                  <div className="flex items-center gap-2 text-emerald-400 font-mono text-[11px]">
+                    <KeyRound className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Staff PIN/Password: <strong>{staff.password || 'Staff@123'}</strong></span>
+                  </div>
                   {staff.subject && (
                     <div className="flex items-center gap-2 text-slate-400">
                       <GraduationCap className="w-3.5 h-3.5 text-slate-500 shrink-0" />
@@ -357,17 +361,22 @@ export const StaffAccessManagementView: React.FC = () => {
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
 
-                <button
-                  onClick={() => {
-                    if (confirm(`Revoke verified access for ${staff.name}? They will be blocked from logging in.`)) {
-                      deleteVerifiedStaff(staff.id);
-                    }
-                  }}
-                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
-                  title="Permanently remove faculty record"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {staff.id !== 'staff-admin-root' ? (
+                  <button
+                    onClick={() => setStaffToDelete(staff)}
+                    className="p-1.5 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
+                    title="Permanently remove faculty record"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <span
+                    className="p-1.5 rounded-xl bg-slate-800/40 text-slate-600 border border-slate-800 text-[10px] font-bold px-2"
+                    title="Root Super Admin cannot be deleted"
+                  >
+                    Protected
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -498,6 +507,19 @@ export const StaffAccessManagementView: React.FC = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Staff PIN / Login Password</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Staff@123 or 6-digit PIN"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Staff will use this password / PIN to authenticate on the login screen.</p>
+              </div>
+
               <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-[11px] flex items-start gap-2">
                 <Lock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>
@@ -592,6 +614,16 @@ export const StaffAccessManagementView: React.FC = () => {
               </div>
 
               <div>
+                <label className="block font-semibold text-slate-300 mb-1">Staff PIN / Password</label>
+                <input
+                  type="text"
+                  value={editingStaff.password || 'Staff@123'}
+                  onChange={(e) => setEditingStaff({ ...editingStaff, password: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
                 <label className="block font-semibold text-slate-300 mb-1">Subject</label>
                 <input
                   type="text"
@@ -617,6 +649,70 @@ export const StaffAccessManagementView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke / Delete Confirmation Modal */}
+      {staffToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-rose-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl text-slate-100 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Permanently Revoke Access?</h3>
+                <p className="text-xs text-slate-400">This action immediately blocks login credentials.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Faculty Name:</span>
+                <span className="font-bold text-white">{staffToDelete.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Assigned Role:</span>
+                <span className="font-semibold text-indigo-300">{staffToDelete.role}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Email:</span>
+                <span className="text-slate-300">{staffToDelete.email}</span>
+              </div>
+              {staffToDelete.assignedClass && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Class:</span>
+                  <span className="text-emerald-300">{staffToDelete.assignedClass}</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-rose-300/90 leading-relaxed">
+              Are you sure you want to remove <strong>{staffToDelete.name}</strong> from the RBAC directory?
+              They will not be able to log in to the Management App until re-added by an Admin.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setStaffToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteVerifiedStaff(staffToDelete.id);
+                  setStaffToDelete(null);
+                }}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg transition flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete & Revoke</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

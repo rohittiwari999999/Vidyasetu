@@ -491,6 +491,9 @@ class AuthService {
   }
 
   Future<void> deleteVerifiedStaff(String docId) async {
+    if (docId == 'staff-admin-root' || docId == 'root_admin_owner') {
+      return;
+    }
     _localStaffStore.removeWhere((s) => s.id == docId);
     try {
       await _firestore.collection('verified_staff').doc(docId).delete();

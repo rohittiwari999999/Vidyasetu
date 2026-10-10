@@ -34,6 +34,7 @@ export const ExamMarksPtmManager: React.FC = () => {
     updatePtmSlot,
     sendPtmReminder,
     users,
+    currentUser,
     showSimulatedPush,
   } = useSchool();
 
@@ -1201,7 +1202,7 @@ export const ExamMarksPtmManager: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Verified Digitally by Examination In-Charge
                 </span>
-                <span>Signature: <strong>Mrs. Meenakshi Sharma</strong></span>
+                <span>Signature: <strong>{currentUser.name}</strong></span>
               </div>
             </div>
           </div>

@@ -16,12 +16,17 @@ import {
 } from 'lucide-react';
 
 export const StudentReportCard: React.FC = () => {
-  const { examReports, ptmMeetings, currentUser } = useSchool();
+  const { examReports, ptmMeetings, currentUser, verifiedStaffList } = useSchool();
   const [selectedTerm, setSelectedTerm] = useState('Term 1 Examination');
 
   const report =
     examReports.find((r) => r.studentId === currentUser.id) ||
     examReports[0];
+
+  const assignedCtName =
+    verifiedStaffList.find(
+      (s) => s.role === 'classTeacher' && s.assignedClass === (report.classId || 'Class 10-A')
+    )?.name || 'Class In-Charge';
 
   // Find user's PTM slot
   const userPtm = ptmMeetings.find((m) =>
@@ -234,7 +239,7 @@ export const StudentReportCard: React.FC = () => {
               <span>Certified Digitally via VidyaSetu CBSE Portal</span>
             </div>
             <div>
-              <span>Class Teacher: <strong>Mrs. Meenakshi Sharma</strong></span>
+              <span>Class Teacher: <strong>{assignedCtName}</strong></span>
             </div>
           </div>
         </div>
