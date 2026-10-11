@@ -139,23 +139,40 @@ const sanitizeStaffList = (list: VerifiedStaffItem[]): VerifiedStaffItem[] => {
     if (s.name.includes('Sunita Verma') || s.name.includes('Meenakshi Sharma') || s.name.includes('Rajesh Khanna')) return false;
     return true;
   });
-  // Always ensure root Super Admin is present
-  const hasRoot = filtered.some(
-    (s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com' || s.email.toLowerCase() === 'rohit.tiwari777@gmail.com'
-  );
-  if (!hasRoot) {
-    return [...INITIAL_VERIFIED_STAFF, ...filtered];
+  // Always ensure both root Super Admins (Abhinav & Rohit) are present
+  const hasSarita = filtered.some((s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com');
+  const hasRohit = filtered.some((s) => s.email.toLowerCase() === 'rohit.tiwari777@gmail.com');
+  const result = [...filtered];
+  if (!hasSarita) {
+    const sarita = INITIAL_VERIFIED_STAFF.find((s) => s.email === 'sarita.abhinav.t9@gmail.com') || INITIAL_VERIFIED_STAFF[0];
+    result.unshift(sarita);
   }
-  return filtered;
+  if (!hasRohit) {
+    const rohit = INITIAL_VERIFIED_STAFF.find((s) => s.email === 'rohit.tiwari777@gmail.com') || INITIAL_VERIFIED_STAFF[1];
+    result.unshift(rohit);
+  }
+  return result;
 };
 
 const sanitizeUserList = (list: UserProfile[]): UserProfile[] => {
-  return list.filter((u) => {
+  const filtered = list.filter((u) => {
     const cleanEmail = u.email.toLowerCase().trim();
     if (DEMO_STAFF_EMAILS.includes(cleanEmail)) return false;
     if (u.name.includes('Sunita Verma') || u.name.includes('Meenakshi Sharma') || u.name.includes('Rajesh Khanna')) return false;
     return true;
   });
+  const hasSarita = filtered.some((u) => u.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com');
+  const hasRohit = filtered.some((u) => u.email.toLowerCase() === 'rohit.tiwari777@gmail.com');
+  const result = [...filtered];
+  if (!hasSarita) {
+    const sarita = INITIAL_USERS.find((u) => u.email === 'sarita.abhinav.t9@gmail.com') || INITIAL_USERS[0];
+    result.unshift(sarita);
+  }
+  if (!hasRohit) {
+    const rohit = INITIAL_USERS.find((u) => u.email === 'rohit.tiwari777@gmail.com') || INITIAL_USERS[1];
+    result.unshift(rohit);
+  }
+  return result;
 };
 
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

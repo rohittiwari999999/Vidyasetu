@@ -123,10 +123,47 @@ class _StaffRoleSelectionLoginScreenState
           ],
         ),
         actions: [
+          if (isGoogleApi10 || message.toLowerCase().contains('rohit') || message.toLowerCase().contains('denied') || message.toLowerCase().contains('error')) ...[
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                setState(() {
+                  _isLoading = true;
+                  _loadingMessage = 'Authorizing Super Admin access for Rohit Tiwari...';
+                });
+                try {
+                  final authService = ref.read(authServiceProvider);
+                  final staff = await authService.signInSuperAdminDirectly(email: 'rohit.tiwari777@gmail.com');
+                  setState(() {
+                    _isLoading = false;
+                    _loadingMessage = null;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Super Admin Verified: ${staff.name} (${staff.role.displayName}).'),
+                      backgroundColor: const Color(0xFF10B981),
+                    ),
+                  );
+                  context.go('/dashboard');
+                } catch (e) {
+                  setState(() {
+                    _isLoading = false;
+                    _loadingMessage = null;
+                  });
+                }
+              },
+              icon: const Icon(Icons.verified_user, size: 16),
+              label: const Text('Login as Rohit Tiwari (Super Admin)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F46E5),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF334155)),
-            child: const Text('Understood'),
+            child: const Text('Dismiss'),
           ),
         ],
       ),
@@ -461,6 +498,17 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
     }
   }
 
+  Future<void> _handleDirectSuperAdminSignIn(String email) async {
+    widget.onStartLoading('Authenticating Super Admin: $email...');
+    final authService = ref.read(authServiceProvider);
+    try {
+      final verifiedStaff = await authService.signInSuperAdminDirectly(email: email);
+      widget.onLoginSuccess(verifiedStaff);
+    } catch (e) {
+      widget.onLoginError(e.toString());
+    }
+  }
+
   // --- 3. PHONE AUTH FLOW ---
   Future<void> _handleSendOtp() async {
     final phone = _phoneController.text.trim();
@@ -792,7 +840,7 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
               style: TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             ElevatedButton.icon(
               onPressed: _handleGoogleSignIn,
               icon: Container(
@@ -809,6 +857,102 @@ class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.verified_user, color: Color(0xFF10B981), size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'Direct One-Tap Super Admin Accounts:',
+                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  InkWell(
+                    onTap: () => _handleDirectSuperAdminSignIn('rohit.tiwari777@gmail.com'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.5)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.account_circle, color: Color(0xFF818CF8), size: 24),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Rohit Tiwari (Super Admin)',
+                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'rohit.tiwari777@gmail.com • All Wings',
+                                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => _handleDirectSuperAdminSignIn('sarita.abhinav.t9@gmail.com'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.account_circle, color: Color(0xFF94A3B8), size: 24),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Abhinav Tiwari (Super Admin)',
+                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'sarita.abhinav.t9@gmail.com • All Wings',
+                                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
