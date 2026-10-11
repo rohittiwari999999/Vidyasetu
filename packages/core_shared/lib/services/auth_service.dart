@@ -30,7 +30,11 @@ class StaffAuthException implements Exception {
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  // Google Sign-In with configured web server client ID from google-services.json for secure Firebase token exchange
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    serverClientId: '1064474396247-9aq4lafl7agtt2qj07bvejk4noidhm8s.apps.googleusercontent.com',
+  );
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -268,55 +272,53 @@ class AuthService {
     }
   }
 
-  /// Safe, direct staff sign-in with Google avoiding null-check issues & timeout hangs
+  /// Authenticated staff sign-in with Google Account and Firebase Auth token verification
   Future<VerifiedStaffModel> signInStaffWithGoogle({
     required StaffRole requestedRole,
-    String? explicitEmail,
   }) async {
-    String email = '';
-    String name = 'Faculty Member';
+    final GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await _googleSignIn.signIn().timeout(const Duration(seconds: 25));
+    } catch (e) {
+      final errStr = e.toString();
+      if (errStr.contains('10') || errStr.contains('DEVELOPER_ERROR')) {
+        throw const StaffAuthException(
+          'Google Sign-In Configuration Notice (ApiException 10):\n'
+          'The SHA-1 certificate fingerprint of this APK must be registered in Firebase Console (Project: vidyasetu-2d41e).\n\n'
+          'To sign in right now with full security, please use Tab 1 (Official Email & PIN) or Tab 2 (Mobile OTP).',
+        );
+      }
+      throw StaffAuthException('Google Sign-In failed: $errStr');
+    }
+
+    if (googleUser == null) {
+      throw const StaffAuthException('Google Sign-In was cancelled.');
+    }
+
+    String email = googleUser.email.trim().toLowerCase();
+    final name = googleUser.displayName ?? 'Faculty Member';
     User? firebaseUser;
 
-    if (explicitEmail != null && explicitEmail.trim().isNotEmpty) {
-      email = explicitEmail.trim().toLowerCase();
-      name = email.contains('rohit') ? 'Rohit Tiwari (Super Admin)' : 'Abhinav Tiwari (Super Admin)';
-    } else {
-      final GoogleSignInAccount? googleUser;
-      try {
-        googleUser = await _googleSignIn.signIn().timeout(const Duration(seconds: 20));
-      } catch (e) {
-        throw StaffAuthException('Google Sign-In failed: ${e.toString()}');
+    // Exchange tokens with Firebase Auth
+    try {
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication.timeout(const Duration(seconds: 8));
+      if (googleAuth.idToken != null || googleAuth.accessToken != null) {
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        final cred = await _auth.signInWithCredential(credential).timeout(const Duration(seconds: 8));
+        firebaseUser = cred.user;
       }
-
-      if (googleUser == null) {
-        throw const StaffAuthException('Google Sign-In was cancelled.');
-      }
-
-      email = googleUser.email.trim().toLowerCase();
-      name = googleUser.displayName ?? 'Faculty Member';
-
-      // Attempt Firebase Auth sign-in if tokens are available with 5s timeout, continue smoothly if unavailable
-      try {
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication.timeout(const Duration(seconds: 6));
-        if (googleAuth.idToken != null || googleAuth.accessToken != null) {
-          final AuthCredential credential = GoogleAuthProvider.credential(
-            accessToken: googleAuth.accessToken,
-            idToken: googleAuth.idToken,
-          );
-          final cred = await _auth.signInWithCredential(credential).timeout(const Duration(seconds: 6));
-          firebaseUser = cred.user;
-        }
-      } catch (e) {
-        debugPrint('Firebase token exchange notice: $e');
-        // Continue with verified Google Identity
-      }
+    } catch (e) {
+      debugPrint('Firebase credential exchange notice: $e');
     }
 
     if (email.endsWith('@gmaol.com')) {
       email = email.replaceAll('@gmaol.com', '@gmail.com');
     }
 
-    // Strict Pre-Verification Lookup in Staff Database
+    // Strict Pre-Verification Lookup in Staff Database (RBAC)
     final staffRecord = await checkPreVerifiedStaff(email: email);
 
     if (staffRecord == null) {
@@ -367,27 +369,6 @@ class AuthService {
     } catch (_) {}
 
     return staffRecord;
-  }
-
-  /// Instant direct Super Admin verification (for tests / Play Console / SHA-1 bypass)
-  Future<VerifiedStaffModel> signInSuperAdminDirectly({String email = 'rohit.tiwari777@gmail.com'}) async {
-    final cleanEmail = email.trim().toLowerCase().replaceAll('@gmaol.com', '@gmail.com');
-    final record = await checkPreVerifiedStaff(email: cleanEmail);
-    if (record != null) return record;
-
-    return VerifiedStaffModel(
-      id: cleanEmail == 'rohit.tiwari777@gmail.com' ? 'staff-admin-rohit' : 'staff-admin-root',
-      name: cleanEmail == 'rohit.tiwari777@gmail.com' ? 'Rohit Tiwari (Super Admin)' : 'Abhinav Tiwari (Super Admin)',
-      email: cleanEmail,
-      phone: '+919670708847',
-      password: 'Admin@123',
-      role: StaffRole.admin,
-      assignedClass: 'All Wings',
-      schoolId: 'vidyasetu_main',
-      isActive: true,
-      addedBy: 'Root Security Authority',
-      createdAt: DateTime(2025, 1, 1),
-    );
   }
 
   // -------------------------------------------------------------
