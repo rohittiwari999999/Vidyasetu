@@ -128,12 +128,9 @@ class _StaffRoleSelectionLoginScreenState
             child: const Text('Close', style: TextStyle(color: Colors.white60)),
           ),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _tabController.animateTo(0); // Switch to official email & PIN tab
-            },
-            icon: const Icon(Icons.lock_outline, size: 16),
-            label: const Text('Use Email & PIN'),
+            onPressed: () => Navigator.pop(ctx),
+            icon: const Icon(Icons.check_circle_outline, size: 16),
+            label: const Text('Understood'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4F46E5),
               foregroundColor: Colors.white,
