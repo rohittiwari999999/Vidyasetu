@@ -195,66 +195,113 @@ class _StaffAccessManagementScreenState
     final phoneController = TextEditingController(text: staff.phone);
     final emailController = TextEditingController(text: staff.email);
     final nameController = TextEditingController(text: staff.name);
+    final classController = TextEditingController(text: staff.assignedClass);
+    StaffRole selectedRole = staff.role;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: const [
-            Icon(Icons.edit, color: Color(0xFF10B981), size: 22),
-            SizedBox(width: 8),
-            Text('Change Mobile Number', style: TextStyle(color: Colors.white, fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: _inputDeco('Staff Name', 'Name', Icons.person),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              style: const TextStyle(color: Colors.white),
-              decoration: _inputDeco('Mobile Number (For OTP)', 'e.g. 9876543210', Icons.phone),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: emailController,
-              style: const TextStyle(color: Colors.white),
-              decoration: _inputDeco('Email ID (For Google Login)', 'email', Icons.email),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              try {
-                await ref.read(authServiceProvider).updateVerifiedStaff(
-                  staff.id,
-                  name: nameController.text.trim(),
-                  phone: phoneController.text.trim(),
-                  email: emailController.text.trim(),
-                );
-              } catch (_) {}
-              if (mounted) {
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Staff details updated!'), backgroundColor: Color(0xFF10B981)),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
-            child: const Text('Update'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.edit, color: Color(0xFF10B981), size: 22),
+              SizedBox(width: 8),
+              Text('Edit Staff Access & Role', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ],
           ),
-        ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDeco('Staff Name', 'Name', Icons.person),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDeco('Mobile Number (For OTP)', 'e.g. 9876543210', Icons.phone),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDeco('Email ID (For Google Login)', 'email', Icons.email),
+                ),
+                const SizedBox(height: 16),
+                const Text('Assigned Role:', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<StaffRole>(
+                      value: selectedRole,
+                      isExpanded: true,
+                      dropdownColor: const Color(0xFF1E293B),
+                      items: StaffRole.values.map((role) {
+                        return DropdownMenuItem(
+                          value: role,
+                          child: Text(role.displayName, style: const TextStyle(color: Colors.white)),
+                        );
+                      }).toList(),
+                      onChanged: (newRole) {
+                        if (newRole != null) {
+                          setDialogState(() => selectedRole = newRole);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                if (selectedRole == StaffRole.classTeacher) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: classController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDeco('Assigned Class', 'e.g. Class 10-A', Icons.class_),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                try {
+                  await ref.read(authServiceProvider).updateVerifiedStaff(
+                    staff.id,
+                    name: nameController.text.trim(),
+                    phone: phoneController.text.trim(),
+                    email: emailController.text.trim(),
+                    role: selectedRole,
+                    assignedClass: selectedRole == StaffRole.classTeacher ? classController.text.trim() : '',
+                  );
+                } catch (_) {}
+                if (mounted) {
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Staff details and role updated!'), backgroundColor: Color(0xFF10B981)),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+              child: const Text('Update'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -492,7 +539,7 @@ class _StaffAccessManagementScreenState
                   ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, color: Color(0xFF10B981), size: 20),
-                  tooltip: 'Change Mobile Number',
+                  tooltip: 'Edit Staff Access & Role',
                   onPressed: () => _editStaffDialog(context, staff),
                 ),
                 IconButton(
