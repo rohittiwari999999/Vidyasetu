@@ -132,6 +132,22 @@ class AuthService {
           _cacheStaff(staff);
           return staff;
         }
+
+        // Broad fallback scan across verified_staff to handle casing, spaces, or custom document IDs
+        final allStaffSnapshot = await _firestore
+            .collection('verified_staff')
+            .limit(100)
+            .get()
+            .timeout(const Duration(seconds: 4));
+        for (final doc in allStaffSnapshot.docs) {
+          final data = doc.data();
+          final docEmail = (data['email'] ?? '').toString().toLowerCase().trim();
+          if (docEmail == cleanEmail && cleanEmail.isNotEmpty) {
+            final staff = VerifiedStaffModel.fromFirestore(doc);
+            _cacheStaff(staff);
+            return staff;
+          }
+        }
       } catch (e) {
         debugPrint('Firestore staff query notice: $e');
       }
@@ -230,7 +246,11 @@ class AuthService {
       );
     }
 
-    if (staffRecord.role != requestedRole) {
+    final isTeacher = (staffRecord.role == StaffRole.classTeacher || staffRecord.role == StaffRole.generalTeacher) &&
+        (requestedRole == StaffRole.classTeacher || requestedRole == StaffRole.generalTeacher);
+    final isAllowed = (staffRecord.role == requestedRole) || (staffRecord.role == StaffRole.admin) || isTeacher;
+
+    if (!isAllowed) {
       throw StaffAuthException(
         'Role Mismatch: Your account is registered as "${staffRecord.role.displayName}", but you selected "${requestedRole.displayName}". Please choose your assigned role.',
       );
@@ -345,8 +365,12 @@ class AuthService {
       );
     }
 
-    // Strict Role Enforcement: Account role must match selected role (prevent admin account hijacking teacher logins)
-    if (staffRecord.role != requestedRole) {
+    // Role Enforcement: Master admin has access to all roles; Teachers have access to teaching portals
+    final isTeacher = (staffRecord.role == StaffRole.classTeacher || staffRecord.role == StaffRole.generalTeacher) &&
+        (requestedRole == StaffRole.classTeacher || requestedRole == StaffRole.generalTeacher);
+    final isAllowed = (staffRecord.role == requestedRole) || (staffRecord.role == StaffRole.admin) || isTeacher;
+
+    if (!isAllowed) {
       try { await _googleSignIn.signOut(); } catch (_) {}
       if (firebaseUser != null) { try { await _auth.signOut(); } catch (_) {} }
       throw StaffAuthException(
@@ -444,8 +468,12 @@ class AuthService {
       );
     }
 
-    // Condition 2: Assigned role in Firestore MUST match the login button clicked
-    if (staffRecord.role != requestedRole) {
+    // Condition 2: Role Authorization Check
+    final isTeacher = (staffRecord.role == StaffRole.classTeacher || staffRecord.role == StaffRole.generalTeacher) &&
+        (requestedRole == StaffRole.classTeacher || requestedRole == StaffRole.generalTeacher);
+    final isAllowed = (staffRecord.role == requestedRole) || (staffRecord.role == StaffRole.admin) || isTeacher;
+
+    if (!isAllowed) {
       await _auth.signOut();
       await _googleSignIn.signOut();
       throw StaffAuthException(
@@ -663,14 +691,17 @@ class AuthService {
     }
 
     try {
+      final current = idx >= 0 ? _localStaffStore[idx] : null;
       final Map<String, dynamic> data = {
+        'name': name?.trim() ?? current?.name ?? '',
+        'email': cleanEmail ?? current?.email ?? '',
+        'phone': cleanPhone ?? current?.phone ?? '',
+        'role': (role ?? current?.role ?? StaffRole.classTeacher).name,
+        'assignedClass': assignedClass?.trim() ?? current?.assignedClass ?? '',
+        'schoolId': current?.schoolId ?? 'vidyasetu_main',
+        'isActive': current?.isActive ?? true,
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      if (name != null) data['name'] = name.trim();
-      if (cleanEmail != null) data['email'] = cleanEmail;
-      if (cleanPhone != null) data['phone'] = cleanPhone;
-      if (role != null) data['role'] = role.name;
-      if (assignedClass != null) data['assignedClass'] = assignedClass.trim();
 
       await _firestore.collection('verified_staff').doc(docId).set(data, SetOptions(merge: true)).timeout(const Duration(seconds: 8));
 

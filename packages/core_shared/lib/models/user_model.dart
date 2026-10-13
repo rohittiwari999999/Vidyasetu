@@ -23,16 +23,30 @@ enum StaffRole {
   }
 
   static StaffRole fromString(String? val) {
-    switch (val?.toLowerCase()) {
+    if (val == null || val.trim().isEmpty) return StaffRole.classTeacher;
+    final normalized = val.toLowerCase().replaceAll(RegExp(r'[\s_-]'), '');
+    switch (normalized) {
       case 'admin':
       case 'manager':
+      case 'superadmin':
+      case 'management':
         return StaffRole.admin;
       case 'principal':
+      case 'headmaster':
+      case 'headmistress':
         return StaffRole.principal;
       case 'classteacher':
-      case 'class_teacher':
+      case 'classtear':
+      case 'class':
         return StaffRole.classTeacher;
+      case 'generalteacher':
+      case 'teacher':
+      case 'staff':
+      case 'faculty':
+        return StaffRole.generalTeacher;
       default:
+        if (normalized.contains('class')) return StaffRole.classTeacher;
+        if (normalized.contains('teach')) return StaffRole.generalTeacher;
         return StaffRole.generalTeacher;
     }
   }
