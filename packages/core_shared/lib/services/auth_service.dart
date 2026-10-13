@@ -85,48 +85,55 @@ class AuthService {
       } catch (_) {}
     }
 
-    // 2. Cloud Firestore check with safe 3-second timeout (never hangs/crashes)
+    // 2. Cloud Firestore check with safe 10-second timeout (never hangs/crashes)
     if (cleanEmail != null && cleanEmail.isNotEmpty) {
       final isSuperAdminEmail = cleanEmail == 'sarita.abhinav.t9@gmail.com' || cleanEmail == 'rohit.tiwari777@gmail.com';
 
       try {
         if (isSuperAdminEmail) {
           final docId = cleanEmail == 'rohit.tiwari777@gmail.com' ? 'root_admin_rohit' : 'root_admin_owner';
-          final query = await _firestore
-              .collection('verified_staff')
-              .where('email', isEqualTo: cleanEmail)
-              .limit(1)
-              .get()
-              .timeout(const Duration(seconds: 3));
-
-          if (query.docs.isEmpty) {
-            final rootDoc = _firestore.collection('verified_staff').doc(docId);
-            await rootDoc.set({
-              'name': cleanEmail == 'rohit.tiwari777@gmail.com' ? 'Rohit Tiwari (Super Admin)' : 'Abhinav Tiwari (Super Admin)',
-              'email': cleanEmail,
-              'phone': '+919670708847',
-              'role': 'admin',
-              'schoolId': 'vidyasetu_main',
-              'isActive': true,
-              'addedBy': 'Master Security Root',
-              'createdAt': FieldValue.serverTimestamp(),
-            }).timeout(const Duration(seconds: 3));
-          }
+          final rootDoc = _firestore.collection('verified_staff').doc(docId);
+          await rootDoc.set({
+            'name': cleanEmail == 'rohit.tiwari777@gmail.com' ? 'Rohit Tiwari (Super Admin)' : 'Abhinav Tiwari (Super Admin)',
+            'email': cleanEmail,
+            'phone': '+919670708847',
+            'role': 'admin',
+            'schoolId': 'vidyasetu_main',
+            'isActive': true,
+            'addedBy': 'Master Security Root',
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true)).timeout(const Duration(seconds: 4));
         }
 
+        // Direct doc lookup by sanitized email ID (no index needed, fast)
+        final safeEmailId = 'staff_${cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+        final directDoc = await _firestore
+            .collection('verified_staff')
+            .doc(safeEmailId)
+            .get()
+            .timeout(const Duration(seconds: 4));
+
+        if (directDoc.exists) {
+          final staff = VerifiedStaffModel.fromFirestore(directDoc);
+          _cacheStaff(staff);
+          return staff;
+        }
+
+        // Single-field Firestore query (never requires composite index)
         final query = await _firestore
             .collection('verified_staff')
             .where('email', isEqualTo: cleanEmail)
-            .where('isActive', isEqualTo: true)
             .limit(1)
             .get()
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 8));
 
         if (query.docs.isNotEmpty) {
-          return VerifiedStaffModel.fromFirestore(query.docs.first);
+          final staff = VerifiedStaffModel.fromFirestore(query.docs.first);
+          _cacheStaff(staff);
+          return staff;
         }
       } catch (e) {
-        debugPrint('Firestore staff query skipped/timed out: $e');
+        debugPrint('Firestore staff query notice: $e');
       }
     }
 
@@ -520,6 +527,17 @@ class AuthService {
     ),
   ];
 
+  static void _cacheStaff(VerifiedStaffModel staff) {
+    final idx = _localStaffStore.indexWhere(
+      (s) => s.id == staff.id || s.email.toLowerCase() == staff.email.toLowerCase(),
+    );
+    if (idx >= 0) {
+      _localStaffStore[idx] = staff;
+    } else {
+      _localStaffStore.add(staff);
+    }
+  }
+
   List<VerifiedStaffModel> getLocalStaffList() {
     return List<VerifiedStaffModel>.from(_localStaffStore);
   }
@@ -531,11 +549,15 @@ class AuthService {
         .snapshots()
         .map((snapshot) {
           final list = snapshot.docs.map((d) => VerifiedStaffModel.fromFirestore(d)).toList();
+          // Update cache with Firestore items
+          for (final item in list) {
+            _cacheStaff(item);
+          }
           // If Firestore is empty, return our persistent store so staff never disappear!
           if (list.isEmpty) {
             return List<VerifiedStaffModel>.from(_localStaffStore);
           }
-          // Merge any newly added local staff not yet in firestore
+          // Merge any local staff not yet in firestore
           final merged = List<VerifiedStaffModel>.from(list);
           for (final local in _localStaffStore) {
             if (!merged.any((m) => m.email.toLowerCase() == local.email.toLowerCase() || (local.phone.isNotEmpty && m.phone == local.phone))) {
@@ -548,12 +570,19 @@ class AuthService {
   }
 
   Future<void> addVerifiedStaff(VerifiedStaffModel staff) async {
-    final newId = staff.id.isNotEmpty ? staff.id : 'staff-${DateTime.now().millisecondsSinceEpoch}';
+    final cleanEmail = staff.email.toLowerCase().trim();
+    final cleanPhone = staff.phone.trim();
+    final newId = staff.id.isNotEmpty
+        ? staff.id
+        : (cleanEmail.isNotEmpty
+            ? 'staff_${cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}'
+            : 'staff-${DateTime.now().millisecondsSinceEpoch}');
+
     final toAdd = VerifiedStaffModel(
       id: newId,
       name: staff.name,
-      email: staff.email.toLowerCase().trim(),
-      phone: staff.phone.trim(),
+      email: cleanEmail,
+      phone: cleanPhone,
       password: staff.password.isNotEmpty ? staff.password : 'Admin@123',
       role: staff.role,
       assignedClass: staff.assignedClass,
@@ -564,19 +593,14 @@ class AuthService {
     );
 
     // Save to local persistent store immediately
-    final existingIdx = _localStaffStore.indexWhere((s) => s.email.toLowerCase() == toAdd.email.toLowerCase() || (toAdd.phone.isNotEmpty && s.phone == toAdd.phone));
-    if (existingIdx >= 0) {
-      _localStaffStore[existingIdx] = toAdd;
-    } else {
-      _localStaffStore.add(toAdd);
-    }
+    _cacheStaff(toAdd);
 
     try {
       final docRef = _firestore.collection('verified_staff').doc(newId);
       await docRef.set({
         'name': toAdd.name,
-        'email': toAdd.email.toLowerCase().trim(),
-        'phone': toAdd.phone.trim(),
+        'email': cleanEmail,
+        'phone': cleanPhone,
         'password': toAdd.password,
         'role': toAdd.role.name,
         'assignedClass': toAdd.assignedClass,
@@ -584,7 +608,7 @@ class AuthService {
         'isActive': true,
         'addedBy': toAdd.addedBy,
         'createdAt': FieldValue.serverTimestamp(),
-      }).timeout(const Duration(seconds: 3));
+      }, SetOptions(merge: true)).timeout(const Duration(seconds: 8));
     } catch (_) {
       // Retained in _localStaffStore
     }
@@ -598,14 +622,25 @@ class AuthService {
     StaffRole? role,
     String? assignedClass,
   }) async {
-    final idx = _localStaffStore.indexWhere((s) => s.id == docId);
+    final cleanEmail = email?.toLowerCase().trim();
+    final cleanPhone = phone?.trim();
+
+    int idx = _localStaffStore.indexWhere((s) => s.id == docId);
+    if (idx < 0 && cleanEmail != null && cleanEmail.isNotEmpty) {
+      idx = _localStaffStore.indexWhere((s) => s.email.toLowerCase() == cleanEmail);
+    }
+    if (idx < 0 && cleanPhone != null && cleanPhone.isNotEmpty) {
+      final pBare = cleanPhone.replaceAll(RegExp(r'[\s-]'), '').replaceFirst('+91', '');
+      idx = _localStaffStore.indexWhere((s) => s.phone.replaceAll(RegExp(r'[\s-]'), '').replaceFirst('+91', '') == pBare);
+    }
+
     if (idx >= 0) {
       final current = _localStaffStore[idx];
       _localStaffStore[idx] = VerifiedStaffModel(
         id: current.id,
         name: name ?? current.name,
-        email: email ?? current.email,
-        phone: phone ?? current.phone,
+        email: cleanEmail ?? current.email,
+        phone: cleanPhone ?? current.phone,
         role: role ?? current.role,
         assignedClass: assignedClass ?? current.assignedClass,
         schoolId: current.schoolId,
@@ -613,6 +648,18 @@ class AuthService {
         addedBy: current.addedBy,
         createdAt: current.createdAt,
       );
+    } else {
+      _localStaffStore.add(VerifiedStaffModel(
+        id: docId,
+        name: name ?? 'Staff',
+        email: cleanEmail ?? '',
+        phone: cleanPhone ?? '',
+        role: role ?? StaffRole.classTeacher,
+        assignedClass: assignedClass ?? 'Class 1',
+        schoolId: 'vidyasetu_main',
+        isActive: true,
+        createdAt: DateTime.now(),
+      ));
     }
 
     try {
@@ -620,12 +667,19 @@ class AuthService {
         'updatedAt': FieldValue.serverTimestamp(),
       };
       if (name != null) data['name'] = name.trim();
-      if (email != null) data['email'] = email.toLowerCase().trim();
-      if (phone != null) data['phone'] = phone.trim();
+      if (cleanEmail != null) data['email'] = cleanEmail;
+      if (cleanPhone != null) data['phone'] = cleanPhone;
       if (role != null) data['role'] = role.name;
       if (assignedClass != null) data['assignedClass'] = assignedClass.trim();
 
-      await _firestore.collection('verified_staff').doc(docId).update(data);
+      await _firestore.collection('verified_staff').doc(docId).set(data, SetOptions(merge: true)).timeout(const Duration(seconds: 8));
+
+      if (cleanEmail != null && cleanEmail.isNotEmpty) {
+        final emailDocId = 'staff_${cleanEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+        if (emailDocId != docId) {
+          await _firestore.collection('verified_staff').doc(emailDocId).set(data, SetOptions(merge: true)).timeout(const Duration(seconds: 8));
+        }
+      }
     } catch (_) {}
   }
 

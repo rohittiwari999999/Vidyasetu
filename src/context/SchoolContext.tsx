@@ -139,7 +139,7 @@ const sanitizeStaffList = (list: VerifiedStaffItem[]): VerifiedStaffItem[] => {
     if (s.name.includes('Sunita Verma') || s.name.includes('Meenakshi Sharma') || s.name.includes('Rajesh Khanna')) return false;
     return true;
   });
-  // Always ensure both root Super Admins (Abhinav & Rohit) are present
+  // Always ensure root Super Admins are present
   const hasSarita = filtered.some((s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com');
   const hasRohit = filtered.some((s) => s.email.toLowerCase() === 'rohit.tiwari777@gmail.com');
   const result = [...filtered];
