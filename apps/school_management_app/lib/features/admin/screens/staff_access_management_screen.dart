@@ -129,6 +129,9 @@ class _StaffAccessManagementScreenState
                   return;
                 }
 
+                // Close dialog immediately so inner window is shown
+                Navigator.of(ctx).pop();
+
                 final newStaff = VerifiedStaffModel(
                   id: '',
                   name: name,
@@ -143,9 +146,12 @@ class _StaffAccessManagementScreenState
                   createdAt: DateTime.now(),
                 );
 
-                await ref.read(authServiceProvider).addVerifiedStaff(newStaff);
-                if (context.mounted) {
-                  Navigator.pop(ctx);
+                try {
+                  await ref.read(authServiceProvider).addVerifiedStaff(newStaff);
+                } catch (_) {}
+
+                if (mounted) {
+                  setState(() {});
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Authorized $name as ${selectedRole.displayName}!'),
@@ -221,16 +227,19 @@ class _StaffAccessManagementScreenState
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              await ref.read(authServiceProvider).updateVerifiedStaff(
-                staff.id,
-                name: nameController.text.trim(),
-                phone: phoneController.text.trim(),
-                email: emailController.text.trim(),
-              );
-              if (context.mounted) {
-                Navigator.pop(ctx);
+              Navigator.of(ctx).pop();
+              try {
+                await ref.read(authServiceProvider).updateVerifiedStaff(
+                  staff.id,
+                  name: nameController.text.trim(),
+                  phone: phoneController.text.trim(),
+                  email: emailController.text.trim(),
+                );
+              } catch (_) {}
+              if (mounted) {
+                setState(() {});
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Mobile number updated!'), backgroundColor: Color(0xFF10B981)),
+                  const SnackBar(content: Text('Staff details updated!'), backgroundColor: Color(0xFF10B981)),
                 );
               }
             },
@@ -256,9 +265,12 @@ class _StaffAccessManagementScreenState
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              await ref.read(authServiceProvider).deleteVerifiedStaff(staff.id);
-              if (context.mounted) {
-                Navigator.pop(ctx);
+              Navigator.of(ctx).pop();
+              try {
+                await ref.read(authServiceProvider).deleteVerifiedStaff(staff.id);
+              } catch (_) {}
+              if (mounted) {
+                setState(() {});
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Revoked and deleted access for ${staff.name}!'), backgroundColor: Colors.redAccent),
                 );

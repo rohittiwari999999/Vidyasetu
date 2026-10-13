@@ -254,6 +254,9 @@ class AuthService {
   // -------------------------------------------------------------
   Future<UserCredential> signInWithGoogle() async {
     try {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn().timeout(const Duration(seconds: 15));
       if (googleUser == null) {
         throw const StaffAuthException('Google Sign-In was cancelled.');
@@ -276,6 +279,11 @@ class AuthService {
   Future<VerifiedStaffModel> signInStaffWithGoogle({
     required StaffRole requestedRole,
   }) async {
+    // 1. Force clear any cached Google account so the Android system always displays the Google Account Chooser
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+
     final GoogleSignInAccount? googleUser;
     try {
       googleUser = await _googleSignIn.signIn().timeout(const Duration(seconds: 25));
@@ -330,12 +338,13 @@ class AuthService {
       );
     }
 
-    if (staffRecord.role != requestedRole && staffRecord.role != StaffRole.admin) {
+    // Strict Role Enforcement: Account role must match selected role (prevent admin account hijacking teacher logins)
+    if (staffRecord.role != requestedRole) {
       try { await _googleSignIn.signOut(); } catch (_) {}
       if (firebaseUser != null) { try { await _auth.signOut(); } catch (_) {} }
       throw StaffAuthException(
-        'Role Mismatch: Your account is registered as "${staffRecord.role.displayName}", '
-        'but you selected "${requestedRole.displayName}". Please choose your assigned role.',
+        'Role Mismatch: You selected "${requestedRole.displayName}", but this Google account ($email) is registered as "${staffRecord.role.displayName}".\n'
+        'Please select the role "${staffRecord.role.displayName}" or choose the Google account assigned for ${requestedRole.displayName}.',
       );
     }
 
@@ -343,6 +352,9 @@ class AuthService {
       try { await _googleSignIn.signOut(); } catch (_) {}
       if (firebaseUser != null) { try { await _auth.signOut(); } catch (_) {} }
       throw const StaffAuthException(
+        'Access Revoked: Your staff account has been deactivated by the Administration.',
+      );
+    }
         'Access Revoked: Your staff account has been deactivated by the Administration.',
       );
     }
@@ -575,7 +587,7 @@ class AuthService {
         'isActive': true,
         'addedBy': toAdd.addedBy,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }).timeout(const Duration(seconds: 3));
     } catch (_) {
       // Retained in _localStaffStore
     }
@@ -769,7 +781,14 @@ class AuthService {
   // 7. GENERAL AUTH & SIGN OUT
   // -------------------------------------------------------------
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _auth.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+    try {
+      await _googleSignIn.disconnect();
+    } catch (_) {}
+    try {
+      await _auth.signOut();
+    } catch (_) {}
   }
 }

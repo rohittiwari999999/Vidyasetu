@@ -17,6 +17,15 @@ class _StaffRoleSelectionLoginScreenState
   bool _isLoading = false;
   String? _loadingMessage;
 
+  @override
+  void initState() {
+    super.initState();
+    // Ensure fresh authentication state when on the role selection screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(currentVerifiedStaffProvider.notifier).state = null;
+    });
+  }
+
   void _showRoleLoginBottomSheet(BuildContext context, StaffRole role) {
     showModalBottomSheet(
       context: context,
