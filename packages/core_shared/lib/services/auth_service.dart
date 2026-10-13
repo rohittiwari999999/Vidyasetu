@@ -355,9 +355,6 @@ class AuthService {
         'Access Revoked: Your staff account has been deactivated by the Administration.',
       );
     }
-        'Access Revoked: Your staff account has been deactivated by the Administration.',
-      );
-    }
 
     // Sync / Upsert into Firestore `users` collection in background with safe timeout
     final effectiveUid = firebaseUser?.uid ?? 'google_${staffRecord.id}';
