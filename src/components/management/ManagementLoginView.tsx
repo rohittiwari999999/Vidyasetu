@@ -77,7 +77,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
   const { verifiedStaffList, loginAsStaffMember, showSimulatedPush } = useSchool();
 
   const [selectedRole, setSelectedRole] = useState<StaffRoleKey>('admin');
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone' | 'google'>('email');
+  const [authMethod, setAuthMethod] = useState<'google' | 'email' | 'phone'>('google');
 
   // Email form
   const [inputEmail, setInputEmail] = useState('');
@@ -92,12 +92,37 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
   const [generatedOtp, setGeneratedOtp] = useState('482910');
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
-  // Google form (3rd Option)
+  // Google form (Primary Option)
   const [inputGoogleEmail, setInputGoogleEmail] = useState('rohit.tiwari777@gmail.com');
   const [inputGooglePassword, setInputGooglePassword] = useState('');
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [isGoogleVerifying, setIsGoogleVerifying] = useState(false);
   const [googleAuthMode, setGoogleAuthMode] = useState<'firebasePopup' | 'credentials'>('firebasePopup');
+
+  // Handle switching role tabs
+  const handleSelectRole = (role: StaffRoleKey) => {
+    setSelectedRole(role);
+    setEmailError(null);
+    setPhoneError(null);
+    setGoogleError(null);
+
+    // Auto-sync email & credentials matching this role for seamless verification
+    const match = verifiedStaffList.find((s) => s.role === role);
+    if (match) {
+      setInputEmail(match.email);
+      setInputPassword(match.password || 'Staff@123');
+      setInputPhone(match.phone.replace(/[^0-9]/g, '').slice(-10));
+      setInputGoogleEmail(match.email);
+      setInputGooglePassword(match.password || 'Staff@123');
+    } else {
+      if (role === 'admin') {
+        setInputGoogleEmail('rohit.tiwari777@gmail.com');
+      } else {
+        setInputGoogleEmail('');
+      }
+      setInputPassword('Staff@123');
+    }
+  };
 
   const handleEmailLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,8 +161,8 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
         return;
       }
 
-      // Role Mismatch Check
-      if (match.role !== selectedRole && match.role !== 'admin') {
+      // Role Mismatch Check (Strict: each role must match its own registered credentials)
+      if (match.role !== selectedRole) {
         setEmailError(
           `Role Access Denied: Your official account is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top to sign in.`
         );
@@ -154,7 +179,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
 
       // Strict Password / Staff PIN Verification
       const enteredPassword = inputPassword.trim();
-      const expectedPassword = match.password || 'Admin@123';
+      const expectedPassword = match.password || 'Staff@123';
       const isRootAdmin =
         cleanEmail === 'sarita.abhinav.t9@gmail.com' ||
         cleanEmail === 'rohit.tiwari777@gmail.com' ||
@@ -215,10 +240,11 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
         return;
       }
 
-      if (match.role !== selectedRole && match.role !== 'admin') {
+      // Strict role check: Admin cannot hijack Teacher logins; accounts must match the chosen role
+      if (match.role !== selectedRole) {
         await signOutFirebase();
         setGoogleError(
-          `Role Mismatch: Your account is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top.`
+          `Role Mismatch: Your Google account (${userEmail}) is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top.`
         );
         setIsGoogleVerifying(false);
         return;
@@ -291,9 +317,10 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
         return;
       }
 
-      if (match.role !== selectedRole && match.role !== 'admin') {
+      // Strict role check: Account role must match the selected role
+      if (match.role !== selectedRole) {
         setGoogleError(
-          `Role Mismatch: Your account is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top.`
+          `Role Mismatch: Your Google account (${targetEmail}) is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top.`
         );
         return;
       }
@@ -442,11 +469,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
                 <button
                   key={opt.key}
                   type="button"
-                  onClick={() => {
-                    setSelectedRole(opt.key);
-                    setEmailError(null);
-                    setPhoneError(null);
-                  }}
+                  onClick={() => handleSelectRole(opt.key)}
                   className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
                     isSelected
                       ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-lg ring-2 ring-indigo-500/40'
@@ -468,8 +491,24 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
           </div>
         </div>
 
-        {/* Auth Method Selector */}
+        {/* Auth Method Selector - Google Sign-In is First & Prominent */}
         <div className="flex items-center justify-center gap-2 mt-5 max-w-md mx-auto bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMethod('google');
+              setGoogleError(null);
+            }}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+              authMethod === 'google'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-white text-blue-600 font-extrabold text-[10px] flex items-center justify-center shadow">G</span>
+            <span>Google (Firebase)</span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -483,7 +522,7 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>Official Email</span>
+            <span>Email & PIN</span>
           </button>
 
           <button
@@ -500,22 +539,6 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
           >
             <Phone className="w-3.5 h-3.5" />
             <span>Mobile OTP</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMethod('google');
-              setGoogleError(null);
-            }}
-            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-              authMethod === 'google'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span className="w-3.5 h-3.5 rounded-full bg-white text-blue-600 font-extrabold text-[10px] flex items-center justify-center">G</span>
-            <span>Google (3rd Option)</span>
           </button>
         </div>
       </div>
@@ -835,8 +858,11 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
                 setInputEmail(staff.email);
                 setInputPassword(staff.password || 'Staff@123');
                 setInputPhone(staff.phone.replace(/[^0-9]/g, '').slice(-10));
+                setInputGoogleEmail(staff.email);
+                setInputGooglePassword(staff.password || 'Staff@123');
                 setEmailError(null);
                 setPhoneError(null);
+                setGoogleError(null);
               }}
               className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-900 transition flex items-center justify-between gap-3 cursor-pointer group"
             >

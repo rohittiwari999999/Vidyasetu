@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Download,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -28,6 +29,8 @@ const AppContent: React.FC = () => {
     setViewMode,
     pendingStudents,
     resetToDefaults,
+    isStaffAuthenticated,
+    logoutStaff,
   } = useSchool();
 
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -158,8 +161,8 @@ const AppContent: React.FC = () => {
               <span>Student Signup</span>
             </button>
 
-            {/* Active User Identity */}
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200">
+            {/* Active User Identity & Log Out Switcher */}
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-200">
               <img
                 src={currentUser.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80"}
                 alt={currentUser.name}
@@ -169,6 +172,16 @@ const AppContent: React.FC = () => {
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 uppercase">
                 {currentUser.role}
               </span>
+              {isStaffAuthenticated && (
+                <button
+                  onClick={logoutStaff}
+                  className="ml-1 px-2 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[10px] font-bold transition flex items-center gap-1 border border-rose-500/30"
+                  title="Sign out of current staff session & switch account"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span className="hidden md:inline">Sign Out</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

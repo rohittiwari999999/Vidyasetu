@@ -24,6 +24,7 @@ class _StaffAccessManagementScreenState
 
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1E293B),
@@ -122,12 +123,19 @@ class _StaffAccessManagementScreenState
                 final phone = phoneController.text.trim();
                 final pass = passwordController.text.trim().isNotEmpty ? passwordController.text.trim() : 'Staff@123';
 
-                if (name.isEmpty || (email.isEmpty && phone.isEmpty)) {
+                if (name.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please provide Name and either Email or Phone!')),
+                    const SnackBar(content: Text('Please provide Staff Full Name!')),
                   );
                   return;
                 }
+
+                final cleanEmail = email.isNotEmpty
+                    ? email
+                    : '${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}@vidyasetu.edu.in';
+                final cleanPhone = phone.isNotEmpty
+                    ? phone
+                    : '+91 98${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
 
                 // Close dialog immediately so inner window is shown
                 Navigator.of(ctx).pop();
@@ -135,8 +143,8 @@ class _StaffAccessManagementScreenState
                 final newStaff = VerifiedStaffModel(
                   id: '',
                   name: name,
-                  email: email,
-                  phone: phone,
+                  email: cleanEmail,
+                  phone: cleanPhone,
                   password: pass,
                   role: selectedRole,
                   assignedClass: selectedRole == StaffRole.classTeacher ? classController.text.trim() : '',

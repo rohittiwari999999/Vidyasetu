@@ -106,6 +106,17 @@ class StaffDashboardScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.swap_horiz, color: Color(0xFF818CF8)),
+                      tooltip: 'Switch Account / Log Out',
+                      onPressed: () async {
+                        ref.read(currentVerifiedStaffProvider.notifier).state = null;
+                        await ref.read(authServiceProvider).signOut();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),

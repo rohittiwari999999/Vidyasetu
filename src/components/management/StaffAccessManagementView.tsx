@@ -53,12 +53,20 @@ export const StaffAccessManagementView: React.FC = () => {
   // Handle Add Staff Submit
   const handleAddStaffSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newEmail.trim() || !newPhone.trim()) return;
+    if (!newName.trim()) return;
+
+    const cleanName = newName.trim();
+    const cleanEmail = newEmail.trim()
+      ? newEmail.trim().toLowerCase()
+      : `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'teacher'}@vidyasetu.edu.in`;
+    const cleanPhone = newPhone.trim()
+      ? newPhone.trim()
+      : `+91 98${Math.floor(10000000 + Math.random() * 90000000)}`;
 
     addVerifiedStaff({
-      name: newName.trim(),
-      email: newEmail.trim().toLowerCase(),
-      phone: newPhone.trim(),
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
       password: newPassword.trim() || 'Staff@123',
       role: newRole,
       assignedClass: newRole === 'classTeacher' ? newAssignedClass : newRole === 'admin' ? 'All Wings' : newRole === 'principal' ? 'All Classes' : '',
@@ -67,7 +75,7 @@ export const StaffAccessManagementView: React.FC = () => {
       addedBy: currentUser.name,
     });
 
-    // Reset & Close
+    // Reset fields & ensure modal closes immediately so the inner directory window is visible
     setNewName('');
     setNewEmail('');
     setNewPhone('');
@@ -354,6 +362,15 @@ export const StaffAccessManagementView: React.FC = () => {
                 </div>
 
                 <button
+                  onClick={() => loginAsStaffMember(staff.id)}
+                  className="px-2.5 py-1.5 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1 shadow transition"
+                  title={`Test / Switch active session to ${staff.name} (${roleDisplay})`}
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Switch</span>
+                </button>
+
+                <button
                   onClick={() => setEditingStaff(staff)}
                   className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
                   title="Edit details & assigned class"
@@ -385,7 +402,12 @@ export const StaffAccessManagementView: React.FC = () => {
 
       {/* Pre-Verify New Staff Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddModal(false);
+          }}
+        >
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center gap-2.5">

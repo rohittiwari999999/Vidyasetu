@@ -404,8 +404,8 @@ class _RoleLoginModal extends ConsumerStatefulWidget {
 }
 
 class _RoleLoginModalState extends ConsumerState<_RoleLoginModal> {
-  // Auth Modes: 0 = Official Email & PIN, 1 = Mobile OTP, 2 = Google Workspace
-  int _selectedAuthTab = 0;
+  // Auth Modes: 0 = Official Email & PIN, 1 = Mobile OTP, 2 = Google Workspace (Default)
+  int _selectedAuthTab = 2;
 
   // Email mode
   final _emailController = TextEditingController();
