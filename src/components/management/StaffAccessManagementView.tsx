@@ -378,7 +378,9 @@ export const StaffAccessManagementView: React.FC = () => {
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
 
-                {staff.id !== 'staff-admin-root' ? (
+                {!['staff-admin-root', 'staff-admin-rohit', 'root_admin_owner', 'root_admin_rohit'].includes(staff.id) &&
+                staff.email.toLowerCase() !== 'sarita.abhinav.t9@gmail.com' &&
+                staff.email.toLowerCase() !== 'rohit.tiwari777@gmail.com' ? (
                   <button
                     onClick={() => setStaffToDelete(staff)}
                     className="p-1.5 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
@@ -388,10 +390,10 @@ export const StaffAccessManagementView: React.FC = () => {
                   </button>
                 ) : (
                   <span
-                    className="p-1.5 rounded-xl bg-slate-800/40 text-slate-600 border border-slate-800 text-[10px] font-bold px-2"
+                    className="p-1.5 rounded-xl bg-slate-800/40 text-slate-500 border border-slate-800 text-[10px] font-bold px-2"
                     title="Root Super Admin cannot be deleted"
                   >
-                    Protected
+                    Protected Root Admin
                   </span>
                 )}
               </div>

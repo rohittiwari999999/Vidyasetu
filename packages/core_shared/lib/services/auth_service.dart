@@ -91,18 +91,28 @@ class AuthService {
 
       try {
         if (isSuperAdminEmail) {
-          final docId = cleanEmail == 'rohit.tiwari777@gmail.com' ? 'root_admin_rohit' : 'root_admin_owner';
-          final rootDoc = _firestore.collection('verified_staff').doc(docId);
-          await rootDoc.set({
-            'name': cleanEmail == 'rohit.tiwari777@gmail.com' ? 'Rohit Tiwari (Super Admin)' : 'Abhinav Tiwari (Super Admin)',
-            'email': cleanEmail,
+          // Sync both root admins in Firestore so both devices/accounts see the exact same permissions
+          await _firestore.collection('verified_staff').doc('root_admin_owner').set({
+            'name': 'Abhinav Tiwari (Super Admin)',
+            'email': 'sarita.abhinav.t9@gmail.com',
             'phone': '+919670708847',
             'role': 'admin',
             'schoolId': 'vidyasetu_main',
             'isActive': true,
-            'addedBy': 'Master Security Root',
+            'addedBy': 'Root Security Authority',
             'createdAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true)).timeout(const Duration(seconds: 4));
+          }, SetOptions(merge: true)).timeout(const Duration(seconds: 4)).catchError((_) {});
+
+          await _firestore.collection('verified_staff').doc('root_admin_rohit').set({
+            'name': 'Rohit Tiwari (Super Admin)',
+            'email': 'rohit.tiwari777@gmail.com',
+            'phone': '+919670708847',
+            'role': 'admin',
+            'schoolId': 'vidyasetu_main',
+            'isActive': true,
+            'addedBy': 'Root Security Authority',
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true)).timeout(const Duration(seconds: 4)).catchError((_) {});
         }
 
         // Direct doc lookup by sanitized email ID (no index needed, fast)
@@ -570,10 +580,9 @@ class AuthService {
     return List<VerifiedStaffModel>.from(_localStaffStore);
   }
 
-  Stream<List<VerifiedStaffModel>> getVerifiedStaffStream({String schoolId = 'vidyasetu_main'}) {
+  Stream<List<VerifiedStaffModel>> getVerifiedStaffStream({String? schoolId}) {
     return _firestore
         .collection('verified_staff')
-        .where('schoolId', isEqualTo: schoolId)
         .snapshots()
         .map((snapshot) {
           final list = snapshot.docs.map((d) => VerifiedStaffModel.fromFirestore(d)).toList();
@@ -581,15 +590,11 @@ class AuthService {
           for (final item in list) {
             _cacheStaff(item);
           }
-          // If Firestore is empty, return our persistent store so staff never disappear!
-          if (list.isEmpty) {
-            return List<VerifiedStaffModel>.from(_localStaffStore);
-          }
-          // Merge any local staff not yet in firestore
+          // Merge both root Super Admins so they are ALWAYS visible to both Sarita and Rohit!
           final merged = List<VerifiedStaffModel>.from(list);
           for (final local in _localStaffStore) {
-            if (!merged.any((m) => m.email.toLowerCase() == local.email.toLowerCase() || (local.phone.isNotEmpty && m.phone == local.phone))) {
-              merged.add(local);
+            if (!merged.any((m) => m.email.toLowerCase() == local.email.toLowerCase())) {
+              merged.insert(0, local);
             }
           }
           return merged;

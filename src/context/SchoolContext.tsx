@@ -25,6 +25,15 @@ import {
   VerifiedStaffItem,
 } from '../data/mockData';
 import confetti from 'canvas-confetti';
+import { db } from '../services/firebase';
+import {
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 
 export type AppViewMode = 'dual' | 'management' | 'student' | 'flutter-hub';
 
@@ -311,6 +320,104 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'verified_staff', JSON.stringify(verifiedStaffList));
   }, [verifiedStaffList]);
+
+  // Real-time Cloud Firestore synchronization for verified staff
+  useEffect(() => {
+    try {
+      const staffCol = collection(db, 'verified_staff');
+      const unsubscribe = onSnapshot(
+        staffCol,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const firestoreStaff: VerifiedStaffItem[] = snapshot.docs.map((d) => {
+              const data = d.data();
+              return {
+                id: d.id,
+                name: data.name || '',
+                email: (data.email || '').toLowerCase().trim(),
+                phone: data.phone || '',
+                password: data.password || 'Staff@123',
+                role: (data.role || 'classTeacher') as VerifiedStaffItem['role'],
+                assignedClass: data.assignedClass || '',
+                subject: data.subject || 'General',
+                employeeId: data.employeeId || 'EMP-' + d.id.slice(-4),
+                isActive: data.isActive !== undefined ? data.isActive : true,
+                addedBy: data.addedBy || 'Master Security Root',
+                createdAt: data.createdAt?.toDate?.()?.toISOString() || (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
+              };
+            });
+
+            // Ensure both Super Admins are ALWAYS included for both logins
+            const merged = [...firestoreStaff];
+            const hasSarita = merged.some((s) => s.email.toLowerCase() === 'sarita.abhinav.t9@gmail.com');
+            const hasRohit = merged.some((s) => s.email.toLowerCase() === 'rohit.tiwari777@gmail.com');
+            if (!hasSarita) {
+              merged.unshift(INITIAL_VERIFIED_STAFF[0]);
+            }
+            if (!hasRohit) {
+              merged.unshift(INITIAL_VERIFIED_STAFF[1]);
+            }
+
+            setVerifiedStaffList(merged);
+            localStorage.setItem(STORAGE_KEY_PREFIX + 'verified_staff', JSON.stringify(merged));
+
+            // Sync users list with Firestore staff
+            setUsers((prevUsers) => {
+              const updatedUsers = [...prevUsers];
+              merged.forEach((staff) => {
+                const mappedRole: UserRole =
+                  staff.role === 'admin' ? 'manager' : staff.role === 'principal' ? 'principal' : 'teacher';
+                const existingIdx = updatedUsers.findIndex((u) => u.email.toLowerCase() === staff.email.toLowerCase());
+                if (existingIdx >= 0) {
+                  const currentTeacher = updatedUsers[existingIdx].teacherDetails;
+                  updatedUsers[existingIdx] = {
+                    ...updatedUsers[existingIdx],
+                    name: staff.name,
+                    phone: staff.phone,
+                    role: mappedRole,
+                    teacherDetails: {
+                      employeeId: staff.employeeId,
+                      designation: staff.role === 'classTeacher' ? `Class Teacher (${staff.assignedClass})` : (currentTeacher?.designation || staff.role),
+                      assignedClass: staff.assignedClass,
+                      subjects: currentTeacher?.subjects || [staff.subject],
+                      qualifications: currentTeacher?.qualifications || 'Approved Institution Faculty',
+                    },
+                  };
+                } else {
+                  updatedUsers.push({
+                    id: 'user-' + staff.id,
+                    name: staff.name,
+                    email: staff.email,
+                    phone: staff.phone,
+                    role: mappedRole,
+                    schoolId: 'DPS-DEL-01',
+                    schoolName: 'Delhi Modern Academy, New Delhi',
+                    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+                    status: 'approved',
+                    teacherDetails: {
+                      employeeId: staff.employeeId,
+                      designation: staff.role === 'classTeacher' ? `Class Teacher (${staff.assignedClass})` : staff.role,
+                      assignedClass: staff.assignedClass,
+                      subjects: [staff.subject],
+                      qualifications: 'Approved Institution Faculty',
+                    },
+                    createdAt: staff.createdAt,
+                  });
+                }
+              });
+              return updatedUsers;
+            });
+          }
+        },
+        (error) => {
+          console.warn('Firestore verified_staff stream notice (local fallback active):', error);
+        }
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn('Firestore verified_staff listener init error:', e);
+    }
+  }, []);
 
   // Keep currentUser synced if user list changes
   useEffect(() => {
@@ -776,6 +883,30 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return updated;
     });
 
+    // Save to Cloud Firestore
+    const cleanEmail = staffData.email.toLowerCase().trim();
+    const cleanPhone = staffData.phone.trim();
+    const docId = cleanEmail.length > 3
+      ? 'staff_' + cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')
+      : newId;
+
+    try {
+      setDoc(doc(db, 'verified_staff', docId), {
+        name: staffData.name.trim(),
+        email: cleanEmail,
+        phone: cleanPhone,
+        password: (staffData.password || 'Staff@123').trim(),
+        role: staffData.role,
+        assignedClass: staffData.assignedClass || '',
+        subject: staffData.subject || 'General',
+        employeeId: staffData.employeeId || `EMP-T${Math.floor(100 + Math.random() * 900)}`,
+        schoolId: 'vidyasetu_main',
+        isActive: true,
+        addedBy: currentUser.name,
+        createdAt: serverTimestamp(),
+      }, { merge: true }).catch((err) => console.warn('Firestore addVerifiedStaff write notice:', err));
+    } catch (_) {}
+
     showSimulatedPush(
       'Staff Access Saved ✅',
       `${staffData.name} (${staffData.role} • ${staffData.assignedClass || 'General'}) saved permanently to Staff Access.`,
@@ -789,6 +920,28 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem(STORAGE_KEY_PREFIX + 'verified_staff', JSON.stringify(updated));
       return updated;
     });
+
+    // Write updates to Cloud Firestore
+    try {
+      const cleanEmail = updates.email?.toLowerCase().trim();
+      const targetDocId = staffId.startsWith('staff_')
+        ? staffId
+        : cleanEmail && cleanEmail.length > 3
+        ? 'staff_' + cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')
+        : staffId;
+
+      setDoc(doc(db, 'verified_staff', targetDocId), {
+        ...(updates.name && { name: updates.name.trim() }),
+        ...(cleanEmail && { email: cleanEmail }),
+        ...(updates.phone && { phone: updates.phone.trim() }),
+        ...(updates.password && { password: updates.password.trim() }),
+        ...(updates.role && { role: updates.role }),
+        ...(updates.assignedClass !== undefined && { assignedClass: updates.assignedClass }),
+        ...(updates.subject && { subject: updates.subject }),
+        schoolId: 'vidyasetu_main',
+        updatedAt: serverTimestamp(),
+      }, { merge: true }).catch((err) => console.warn('Firestore updateVerifiedStaff write notice:', err));
+    } catch (_) {}
 
     // Also sync to users if name, email, phone or assignedClass changed
     setUsers((prev) => {
@@ -819,8 +972,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteVerifiedStaff = (staffId: string) => {
     // Root Super Admin protection
-    if (staffId === 'staff-admin-root') {
-      showSimulatedPush('Action Denied ⚠️', 'The primary Root Institution Administrator cannot be deleted.', 'approval');
+    if (staffId === 'staff-admin-root' || staffId === 'staff-admin-rohit') {
+      showSimulatedPush('Action Denied ⚠️', 'Root Institution Administrators cannot be deleted.', 'approval');
       return;
     }
 
@@ -830,6 +983,15 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem(STORAGE_KEY_PREFIX + 'verified_staff', JSON.stringify(updated));
       return updated;
     });
+
+    // Delete from Cloud Firestore
+    try {
+      deleteDoc(doc(db, 'verified_staff', staffId)).catch(() => {});
+      if (toRemove?.email) {
+        const emailDocId = 'staff_' + toRemove.email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
+        deleteDoc(doc(db, 'verified_staff', emailDocId)).catch(() => {});
+      }
+    } catch (_) {}
 
     setUsers((prev) => {
       const updated = prev.filter(
@@ -852,11 +1014,30 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const toggleStaffStatus = (staffId: string) => {
+    const target = verifiedStaffList.find((s) => s.id === staffId);
+    if (!target) return;
+    const nextStatus = !target.isActive;
+
     setVerifiedStaffList((prev) => {
-      const updated = prev.map((s) => (s.id === staffId ? { ...s, isActive: !s.isActive } : s));
+      const updated = prev.map((s) => (s.id === staffId ? { ...s, isActive: nextStatus } : s));
       localStorage.setItem(STORAGE_KEY_PREFIX + 'verified_staff', JSON.stringify(updated));
       return updated;
     });
+
+    // Update in Cloud Firestore
+    try {
+      setDoc(doc(db, 'verified_staff', staffId), {
+        isActive: nextStatus,
+        updatedAt: serverTimestamp(),
+      }, { merge: true }).catch(() => {});
+      if (target.email) {
+        const emailDocId = 'staff_' + target.email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
+        setDoc(doc(db, 'verified_staff', emailDocId), {
+          isActive: nextStatus,
+          updatedAt: serverTimestamp(),
+        }, { merge: true }).catch(() => {});
+      }
+    } catch (_) {}
   };
 
   const loginAsStaffMember = (staffId: string) => {

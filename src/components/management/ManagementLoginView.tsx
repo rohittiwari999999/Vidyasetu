@@ -161,8 +161,13 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
         return;
       }
 
-      // Role Mismatch Check (Strict: each role must match its own registered credentials)
-      if (match.role !== selectedRole) {
+      // Role Authorization Check: Super Admin can access all portals; Teachers have access to teaching portals
+      const isTeacherRole =
+        (match.role === 'classTeacher' || match.role === 'generalTeacher') &&
+        (selectedRole === 'classTeacher' || selectedRole === 'generalTeacher');
+      const isAllowed = match.role === selectedRole || match.role === 'admin' || isTeacherRole;
+
+      if (!isAllowed) {
         setEmailError(
           `Role Access Denied: Your official account is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top to sign in.`
         );
@@ -240,8 +245,13 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
         return;
       }
 
-      // Strict role check: Admin cannot hijack Teacher logins; accounts must match the chosen role
-      if (match.role !== selectedRole) {
+      // Role Authorization Check: Super Admin can access all portals; Teachers have access to teaching portals
+      const isTeacherRole =
+        (match.role === 'classTeacher' || match.role === 'generalTeacher') &&
+        (selectedRole === 'classTeacher' || selectedRole === 'generalTeacher');
+      const isAllowed = match.role === selectedRole || match.role === 'admin' || isTeacherRole;
+
+      if (!isAllowed) {
         await signOutFirebase();
         setGoogleError(
           `Role Mismatch: Your Google account (${userEmail}) is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top.`
@@ -317,8 +327,13 @@ export const ManagementLoginView: React.FC<ManagementLoginViewProps> = ({ onLogi
         return;
       }
 
-      // Strict role check: Account role must match the selected role
-      if (match.role !== selectedRole) {
+      // Role Authorization Check: Super Admin can access all portals; Teachers have access to teaching portals
+      const isTeacherRole =
+        (match.role === 'classTeacher' || match.role === 'generalTeacher') &&
+        (selectedRole === 'classTeacher' || selectedRole === 'generalTeacher');
+      const isAllowed = match.role === selectedRole || match.role === 'admin' || isTeacherRole;
+
+      if (!isAllowed) {
         setGoogleError(
           `Role Mismatch: Your Google account (${targetEmail}) is registered as "${getRoleDisplayName(match.role)}", but you selected "${getRoleDisplayName(selectedRole)}". Please select "${getRoleDisplayName(match.role)}" on top.`
         );

@@ -357,7 +357,7 @@ class _StaffAccessManagementScreenState
         ],
       ),
       body: StreamBuilder<List<VerifiedStaffModel>>(
-        stream: authService.getVerifiedStaffStream(schoolId: _schoolId),
+        stream: authService.getVerifiedStaffStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
