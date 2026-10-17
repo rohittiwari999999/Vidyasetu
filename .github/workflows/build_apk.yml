@@ -217,7 +217,7 @@ jobs:
           flutter build apk --release
           flutter build appbundle --release
 
-      - name: Upload Staff Management APK (30 MB)
+      - name: Upload Staff Management APK (Full Production Build)
         uses: actions/upload-artifact@v4
         with:
           name: VidyaSetu-Staff-Management-Release-APK
@@ -231,7 +231,7 @@ jobs:
           path: apps/school_management_app/build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
-      - name: Upload Student Parent APK (30 MB)
+      - name: Upload Student Parent APK (Full Production Build)
         uses: actions/upload-artifact@v4
         with:
           name: VidyaSetu-Student-Parent-Release-APK
